@@ -52,6 +52,11 @@ module ocean_vert_kpp_mom4p1_mod
 ! Diurnal coupling in the tropical oceans of CCSM3
 ! Journal of Climate (2006) vol 19 pages 2347--2365
 ! </REFERENCE>
+! <REFERENCE>
+! Megann, A. et al., 2014: GO5.0: the joint NERC-Met Office NEMO
+! global ocean model for use in coupled and forced applications
+! Geoscientific Model Development, {\bf 7}, Issue 3, 1069--1092.
+! </REFERENCE>
 !
 ! <NOTE>
 ! Original numerical algorithm by Bill Large at NCAR June 6, 1994
@@ -105,6 +110,23 @@ module ocean_vert_kpp_mom4p1_mod
 !  <DATA NAME="diff_con_limit" UNITS="m^2/sec" TYPE="real">
 !  Enhanced vertical diffusivity in regions of convection
 !  </DATA> 
+!
+!  <DATA NAME="eqred_iw" TYPE="logical">
+!  Activate to reduce diff_cbt_iw near the equator
+!  based on an implementation in NEMO GO5.0 (Megann etal (2014)).
+!  default eqred_iw=.false.
+!  </DATA>
+!  <DATA NAME="diff_cbt_iw_eq" TYPE="logical">
+!  Equatorial value of the background diffusivity
+!  default diff_cbt_iw_eq=1e-6
+!  <DATA NAME="eqred_minlat" TYPE="logical">
+!  Equatorward transition latitude
+!  default eqred_minlat=5
+!  </DATA>
+!  <DATA NAME="eqred_maxlat" TYPE="logical">
+!  Poleward transition latitude
+!  default eqred_maxlat=15
+!  </DATA>
 !
 !  <DATA NAME="concv" UNITS="dimensionless" TYPE="real">
 !  constant for pure convection (eqn. 23 of Large etal)
@@ -386,6 +408,10 @@ real :: diff_cbt_iw        = 0.1e-4  ! m^2/s. diffusivity background due to inte
 real :: Vtc                          ! non-dimensional coefficient for velocity 
                                      ! scale of turbulant velocity shear        
                                      ! (=function of concv,concs,epsilon,von_karman,Ricr)
+logical :: eqred_iw        = .false. ! Reduce diff_cbt_iw near the equator
+real    :: diff_cbt_iw_eq  = 1.0e-6  ! Equatorial value of diff_cbt_iw
+real    :: eqred_minlat    = 5.0     ! Equatorward transition latitude
+real    :: eqred_maxlat    = 15.0    ! Poleward transition latitude
 
 real :: cg              ! non-dimensional coefficient for counter-gradient term
 real :: deltaz          ! delta zehat in table
@@ -512,6 +538,7 @@ namelist /ocean_vert_kpp_mom4p1_nml/ use_this_module, shear_instability, double_
                                      diff_cbt_iw, visc_cbu_iw,                              &
                                      visc_cbu_limit, diff_cbt_limit,                        &
                                      visc_con_limit, diff_con_limit,                        &
+                                     eqred_iw, diff_cbt_iw_eq, eqred_minlat, eqred_maxlat,  &
                                      concv, Ricr, non_local_kpp, smooth_blmc,               &
                                      Lgam, Cw_0,l_smyth, LTmax, Wstfac,                     &
                                      kl_min, kbl_standard_method, debug_this_module,        &
@@ -2243,6 +2270,15 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
   real, parameter :: Riinfty = 0.8  ! local Richardson Number limit for shear instability
   real            :: Rigg, ratio, frit, fcont, friu, fconu
   integer         :: i, j, k
+  real            :: eqred_slope, eqred_flag, diff_cbt_iw_latd
+
+  if (eqred_iw) then
+     eqred_slope = (diff_cbt_iw - diff_cbt_iw_eq) / (eqred_maxlat - eqred_minlat)
+     eqred_flag  = 1.0
+  else
+     eqred_slope = 0.0
+     eqred_flag  = 0.0
+  endif
 
   if (calc_visc_on_cgrid) then
 !-----------------------------------------------------------------------
@@ -2281,10 +2317,18 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
 !           eqn. (29).  Note: temporarily have visc_cbu on T-point.
 !-----------------------------------------------------------------------
 
-            visc_cbu(i,j,k)       = visc_cbu_iw + fconu * visc_con_limit   
-            diff_cbt(i,j,k,1)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt(i,j,k,2)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt_conv(i,j,k)  =               fcont * diff_con_limit
+            diff_cbt_iw_latd = eqred_slope*(abs(Grd%yt(i,j))-eqred_minlat)
+            diff_cbt_iw_latd = max(diff_cbt_iw_latd,diff_cbt_iw_eq)
+            diff_cbt_iw_latd = min(diff_cbt_iw_latd,diff_cbt_iw)
+            diff_cbt_iw_latd = diff_cbt_iw -                   &
+                                 eqred_flag*(diff_cbt_iw-diff_cbt_iw_latd)
+
+            visc_cbu(i,j,k)    = visc_cbu_iw + fconu * visc_con_limit
+            diff_cbt(i,j,k,1)  = diff_cbt_iw_latd + fcont * diff_con_limit
+            diff_cbt(i,j,k,2)  = diff_cbt_iw_latd + fcont * diff_con_limit
+
+            diff_cbt_conv(i,j,k)  =                 fcont * diff_con_limit
+
 !-----------------------------------------------------------------------
 !           add contribution due to shear instability
 !-----------------------------------------------------------------------
@@ -2329,11 +2373,17 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
 !           eqn. (29).  Note: temporarily have visc_cbu on T-point.
 !-----------------------------------------------------------------------
 
-            visc_cbu(i,j,k)       = visc_cbu_iw + fcont * visc_con_limit   
-            diff_cbt(i,j,k,1)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt(i,j,k,2)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt_conv(i,j,k)  =               fcont * diff_con_limit
+            diff_cbt_iw_latd = eqred_slope*(abs(Grd%yt(i,j))-eqred_minlat)
+            diff_cbt_iw_latd = max(diff_cbt_iw_latd,diff_cbt_iw_eq)
+            diff_cbt_iw_latd = min(diff_cbt_iw_latd,diff_cbt_iw)
+            diff_cbt_iw_latd = diff_cbt_iw -                   &
+                                 eqred_flag*(diff_cbt_iw-diff_cbt_iw_latd)
 
+            visc_cbu(i,j,k)    = visc_cbu_iw + fcont * visc_con_limit
+            diff_cbt(i,j,k,1)  = diff_cbt_iw_latd + fcont * diff_con_limit
+            diff_cbt(i,j,k,2)  = diff_cbt_iw_latd + fcont * diff_con_limit
+
+            diff_cbt_conv(i,j,k)  =                 fcont * diff_con_limit
 !-----------------------------------------------------------------------
 !           add contribution due to shear instability
 !-----------------------------------------------------------------------
