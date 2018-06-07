@@ -447,12 +447,19 @@ integer, dimension(:), allocatable :: id_wbot(:)
 logical  :: used
 integer  :: id_diff_cbt_kpp_t =-1
 integer  :: id_diff_cbt_kpp_s =-1
-integer  :: id_diff_cbt_conv  =-1
 integer  :: id_hblt           =-1
 integer  :: id_ws             =-1
 integer  :: id_lang_enh       =-1
 integer  :: id_lang           =-1
 integer  :: id_u10           =-1
+
+integer  :: id_diff_cbt_kppiw        =-1
+integer  :: id_diff_cbt_kppish       =-1
+integer  :: id_diff_cbt_kppicon      =-1
+integer  :: id_diff_cbt_kppbl_t      =-1
+integer  :: id_diff_cbt_kppbl_s      =-1
+integer  :: id_diff_cbt_kppdd_t      =-1
+integer  :: id_diff_cbt_kppdd_s      =-1
 
 integer  :: id_neut_rho_kpp_nloc          =-1
 integer  :: id_pot_rho_kpp_nloc           =-1
@@ -933,8 +940,32 @@ ierr = check_nml_error(io_status,'ocean_vert_kpp_mom4p1_nml')
        Grd%tracer_axes(1:3), Time%model_time, 'vert diffusivity from kpp for salt',&
        'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
 
-  id_diff_cbt_conv = register_diag_field('ocean_model','diff_cbt_conv',             &
-       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp convection',&
+  id_diff_cbt_kppiw = register_diag_field('ocean_model','diff_cbt_kppiw',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Background IW',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppish = register_diag_field('ocean_model','diff_cbt_kppish',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Interior Shear',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppicon = register_diag_field('ocean_model','diff_cbt_kppicon',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Interior Convection',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppbl_t = register_diag_field('ocean_model','diff_cbt_kppbl_t',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Boundary Layer for temp',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppbl_s = register_diag_field('ocean_model','diff_cbt_kppbl_s',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Boundary Layer for salt',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppdd_t = register_diag_field('ocean_model','diff_cbt_kppdd_t',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Double Diffusion for temp',&
+       'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
+
+  id_diff_cbt_kppdd_s = register_diag_field('ocean_model','diff_cbt_kppdd_s',         &
+       Grd%tracer_axes(1:3),Time%model_time, 'vert diffusivity from kpp Double Diffusion for salt',&
        'm^2/sec', missing_value = missing_value, range=(/-1.e5,1.e5/))
 
   id_hblt = register_diag_field('ocean_model','hblt',Grd%tracer_axes(1:2), &
@@ -998,8 +1029,9 @@ end subroutine ocean_vert_kpp_mom4p1_init
 ! </DESCRIPTION>
 !
 subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag, Dens, &
-                                swflx, sw_frac_zt, pme, river, visc_cbu, diff_cbt,      &
-                                diff_cbt_conv, hblt_depth, do_wave)
+                                swflx, sw_frac_zt, pme, river, visc_cbu, diff_cbt, hblt_depth, &
+                                diff_cbt_kppiw, diff_cbt_kppish, diff_cbt_kppicon, diff_cbt_kppbl, &
+                                diff_cbt_kppdd, do_wave)
 
   real,                            intent(in)    :: aidif
   type(ocean_time_type),           intent(in)    :: Time
@@ -1015,7 +1047,11 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
   real, dimension(isd:,jsd:),      intent(inout) :: hblt_depth
   real, dimension(isd:,jsd:,:),    intent(inout) :: visc_cbu
   real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt
-  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_conv
+  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppiw
+  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppish
+  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppicon
+  real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt_kppbl
+  real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt_kppdd
   logical,                         intent(in)    :: do_wave
 
 
@@ -1247,7 +1283,8 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
 !     internal wave activity, static instability, and local shear 
 !     instability.
 !-----------------------------------------------------------------------
-      call ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
+      call ri_iwmix(visc_cbu, diff_cbt, diff_cbt_kppiw, &
+                    diff_cbt_kppish, diff_cbt_kppicon)
 
 
 !-----------------------------------------------------------------------
@@ -1255,7 +1292,7 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
 !-----------------------------------------------------------------------
 
       if (double_diffusion) then
-        call ddmix (Time, T_prog, Dens, diff_cbt)  
+        call ddmix (Time, T_prog, Dens, diff_cbt, diff_cbt_kppdd)
       endif
 
 !-----------------------------------------------------------------------
@@ -1267,6 +1304,11 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
             visc_cbu(i,j,ki)    = visc_cbu(i,j,ki)  *Grd%tmask(i,j,min(ki+1,nk))
             diff_cbt(i,j,ki,1)  = diff_cbt(i,j,ki,1)*Grd%tmask(i,j,min(ki+1,nk))
             diff_cbt(i,j,ki,2)  = diff_cbt(i,j,ki,2)*Grd%tmask(i,j,min(ki+1,nk))
+            diff_cbt_kppiw(i,j,ki)  = diff_cbt_kppiw(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+            diff_cbt_kppish(i,j,ki)  = diff_cbt_kppish(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+            diff_cbt_kppicon(i,j,ki)  = diff_cbt_kppicon(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+            diff_cbt_kppdd(i,j,ki,1)  = diff_cbt_kppdd(i,j,ki,1)*Grd%tmask(i,j,min(ki+1,nk))
+            diff_cbt_kppdd(i,j,ki,2)  = diff_cbt_kppdd(i,j,ki,2)*Grd%tmask(i,j,min(ki+1,nk))
           enddo
         enddo
       enddo
@@ -1350,12 +1392,28 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
                    visc_cbu(i,j,ki)   = blmc(i,j,ki,1)
                    diff_cbt(i,j,ki,1) = blmc(i,j,ki,2)
                    diff_cbt(i,j,ki,2) = blmc(i,j,ki,3)
+
+                   diff_cbt_kppbl(i,j,ki,1) = blmc(i,j,ki,2)
+                   diff_cbt_kppbl(i,j,ki,2) = blmc(i,j,ki,3)
+                   diff_cbt_kppiw(i,j,ki) = 0.0
+                   diff_cbt_kppicon(i,j,ki) = 0.0
+                   diff_cbt_kppish(i,j,ki) = 0.0
+                   diff_cbt_kppdd(i,j,ki,1) = 0.0
+                   diff_cbt_kppdd(i,j,ki,2) = 0.0
                else
                    ghats(i,j,ki)=0.0
                endif
 
                diff_cbt(i,j,ki,1) = diff_cbt(i,j,ki,1)*Grd%tmask(i,j,min(ki+1,nk))
                diff_cbt(i,j,ki,2) = diff_cbt(i,j,ki,2)*Grd%tmask(i,j,min(ki+1,nk))               
+
+               diff_cbt_kppiw(i,j,ki)  = diff_cbt_kppiw(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppish(i,j,ki)  = diff_cbt_kppish(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppicon(i,j,ki)  = diff_cbt_kppicon(i,j,ki)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppbl(i,j,ki,1)  = diff_cbt_kppbl(i,j,ki,1)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppbl(i,j,ki,2)  = diff_cbt_kppbl(i,j,ki,2)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppdd(i,j,ki,1)  = diff_cbt_kppdd(i,j,ki,1)*Grd%tmask(i,j,min(ki+1,nk))
+               diff_cbt_kppdd(i,j,ki,2)  = diff_cbt_kppdd(i,j,ki,2)*Grd%tmask(i,j,min(ki+1,nk))
             enddo
          enddo
       enddo
@@ -1380,6 +1438,14 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
       visc_cbu(:,:,nk)   = 0.0
       diff_cbt(:,:,nk,1) = 0.0
       diff_cbt(:,:,nk,2) = 0.0
+
+      diff_cbt_kppiw(:,:,nk) = 0.0
+      diff_cbt_kppish(:,:,nk) = 0.0
+      diff_cbt_kppicon(:,:,nk) = 0.0
+      diff_cbt_kppbl(:,:,nk,1) = 0.0
+      diff_cbt_kppbl(:,:,nk,2) = 0.0
+      diff_cbt_kppdd(:,:,nk,1) = 0.0
+      diff_cbt_kppdd(:,:,nk,2) = 0.0
 
       if(debug_this_module) then 
           do k=1,nk-1
@@ -1590,7 +1656,13 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
 
        call diagnose_3d(Time, Grd, id_diff_cbt_kpp_t, diff_cbt(:,:,:,1))
        call diagnose_3d(Time, Grd, id_diff_cbt_kpp_s, diff_cbt(:,:,:,2))
-       call diagnose_3d(Time, Grd, id_diff_cbt_conv,  diff_cbt_conv(:,:,:))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppiw, diff_cbt_kppiw(:,:,:))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppish, diff_cbt_kppish(:,:,:))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppicon, diff_cbt_kppicon(:,:,:))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppbl_t, diff_cbt_kppbl(:,:,:,1))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppbl_s, diff_cbt_kppbl(:,:,:,2))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppdd_t, diff_cbt_kppdd(:,:,:,1))
+       call diagnose_3d(Time, Grd, id_diff_cbt_kppdd_s, diff_cbt_kppdd(:,:,:,2))
        call diagnose_2d(Time, Grd, id_hblt, hblt(:,:))
 
 end subroutine vert_mix_kpp_mom4p1
@@ -2234,11 +2306,14 @@ end subroutine wscale
 !      diff_cbt = diffusion coefficient at bottom of "t" cells (m**2/s)         <BR/>  
 ! </DESCRIPTION>
 !
-subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
+subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_kppiw, &
+                    diff_cbt_kppish, diff_cbt_kppicon)
 
   real, dimension(isd:,jsd:,:),   intent(inout) :: visc_cbu
   real, dimension(isd:,jsd:,:,:), intent(inout) :: diff_cbt
-  real, dimension(isd:,jsd:,:),   intent(inout) :: diff_cbt_conv
+  real, dimension(isd:,jsd:,:),   intent(inout) :: diff_cbt_kppiw
+  real, dimension(isd:,jsd:,:),   intent(inout) :: diff_cbt_kppish
+  real, dimension(isd:,jsd:,:),   intent(inout) :: diff_cbt_kppicon
   
   real, parameter :: Riinfty = 0.8  ! local Richardson Number limit for shear instability
   real            :: Rigg, ratio, frit, fcont, friu, fconu
@@ -2284,7 +2359,10 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
             visc_cbu(i,j,k)       = visc_cbu_iw + fconu * visc_con_limit   
             diff_cbt(i,j,k,1)     = diff_cbt_iw + fcont * diff_con_limit
             diff_cbt(i,j,k,2)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt_conv(i,j,k)  =               fcont * diff_con_limit
+
+            diff_cbt_kppiw(i,j,k) = diff_cbt_iw
+            diff_cbt_kppicon(i,j,k) = fcont * diff_con_limit
+
 !-----------------------------------------------------------------------
 !           add contribution due to shear instability
 !-----------------------------------------------------------------------
@@ -2295,6 +2373,8 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
                  + shear_instability_flag*diff_cbt_limit*frit 
             visc_cbu(i,j,k)   = visc_cbu(i,j,k)                &
                  + shear_instability_flag*visc_cbu_limit*friu 
+
+            diff_cbt_kppish(i,j,k) = shear_instability_flag*diff_cbt_limit*frit
 
           enddo
         enddo
@@ -2332,8 +2412,9 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
             visc_cbu(i,j,k)       = visc_cbu_iw + fcont * visc_con_limit   
             diff_cbt(i,j,k,1)     = diff_cbt_iw + fcont * diff_con_limit
             diff_cbt(i,j,k,2)     = diff_cbt_iw + fcont * diff_con_limit
-            diff_cbt_conv(i,j,k)  =               fcont * diff_con_limit
 
+            diff_cbt_kppiw(i,j,k) = diff_cbt_iw
+            diff_cbt_kppicon(i,j,k) = fcont * diff_con_limit
 !-----------------------------------------------------------------------
 !           add contribution due to shear instability
 !-----------------------------------------------------------------------
@@ -2344,6 +2425,8 @@ subroutine ri_iwmix(visc_cbu, diff_cbt, diff_cbt_conv)
                  + shear_instability_flag*diff_cbt_limit*frit 
             visc_cbu(i,j,k)   = visc_cbu(i,j,k)                &
                  + shear_instability_flag*visc_cbu_limit*frit 
+
+            diff_cbt_kppish(i,j,k) = shear_instability_flag*diff_cbt_limit*frit
 
           enddo
         enddo
@@ -2382,12 +2465,13 @@ end subroutine ri_iwmix
 !
 ! </DESCRIPTION>
 !
-subroutine ddmix (Time, T_prog, Dens, diff_cbt)
+subroutine ddmix (Time, T_prog, Dens, diff_cbt, diff_cbt_kppdd)
 
 type(ocean_time_type),          intent(in)    :: Time
 type(ocean_prog_tracer_type),   intent(in)    :: T_prog(:)
 type(ocean_density_type),       intent(in)    :: Dens
 real, dimension(isd:,jsd:,:,:), intent(inout) :: diff_cbt
+real, dimension(isd:,jsd:,:,:), intent(inout) :: diff_cbt_kppdd
 
 real diffdd   ! double diffusion diffusivity scale
 real prandtl  ! prandtl number
@@ -2444,6 +2528,8 @@ tau = Time%tau
 
                  diff_cbt(i,j,ki,1) = diff_cbt(i,j,ki,1) + 0.7*diffdd
                  diff_cbt(i,j,ki,2) = diff_cbt(i,j,ki,2) + diffdd
+                 diff_cbt_kppdd(i,j,ki,1) = 0.7*diffdd
+                 diff_cbt_kppdd(i,j,ki,2) = diffdd
 
 !            diffusive convection eqn. (32)
              else if ( (alphaDT(i,j,ki) < 0.0) .and.  &
@@ -2459,6 +2545,9 @@ tau = Time%tau
 
                  diff_cbt(i,j,ki,1) = diff_cbt(i,j,ki,1) + diffdd
                  diff_cbt(i,j,ki,2) = diff_cbt(i,j,ki,2) + prandtl*diffdd
+
+                 diff_cbt_kppdd(i,j,ki,1) = diffdd
+                 diff_cbt_kppdd(i,j,ki,2) = prandtl*diffdd
 
              endif
 
