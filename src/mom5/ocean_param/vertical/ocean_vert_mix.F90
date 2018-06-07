@@ -419,10 +419,14 @@ real, dimension(:,:,:), allocatable :: diff_cbt_back
 ! diagnosing the vertical diffusion of local reference potrho
 real, dimension(:,:,:), allocatable :: wrk1_vmix
 real, dimension(:,:,:), allocatable :: wrk2_vmix
+real, dimension(:,:,:), allocatable :: diff_cbt_kppiw
+real, dimension(:,:,:), allocatable :: diff_cbt_kppish
+real, dimension(:,:,:), allocatable :: diff_cbt_kppicon
+real, dimension(:,:,:,:), allocatable :: diff_cbt_kppbl
+real, dimension(:,:,:,:), allocatable :: diff_cbt_kppdd
 real, dimension(:,:,:), allocatable :: diff_cbt_wave
 real, dimension(:,:,:), allocatable :: diff_cbt_leewave
 real, dimension(:,:,:), allocatable :: diff_cbt_drag
-real, dimension(:,:,:), allocatable :: diff_cbt_conv
 
 ! for background diffusivity that gets smaller in equatorial region
 logical :: hwf_diffusivity      = .false.
@@ -687,11 +691,27 @@ integer, dimension(:), allocatable :: id_vdiffuse_k33
 integer, dimension(:), allocatable :: id_vdiffuse_k33_on_nrho
 integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt
 integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_on_nrho
-integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_conv
 integer, dimension(:), allocatable :: id_vdiffuse_sbc
 integer, dimension(:), allocatable :: id_vdiffuse_sbc_on_nrho
 integer, dimension(:), allocatable :: id_vdiffuse_bbc
 integer, dimension(:), allocatable :: id_vdiffuse_diss
+
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppiw
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppiw_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppish
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppish_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppicon
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppicon_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppbl
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppbl_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppdd
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_kppdd_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_wave
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_wave_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_leewave
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_leewave_on_nrho
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_drag
+integer, dimension(:), allocatable :: id_vdiffuse_diff_cbt_drag_on_nrho
 
 type(ocean_grid_type), pointer   :: Grd => NULL()
 type(ocean_domain_type), pointer :: Dom => NULL()
@@ -833,14 +853,23 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
   wrk1_vmix(:,:,:) = 0.0 
   wrk2_vmix(:,:,:) = 0.0 
 
+  allocate (diff_cbt_kppiw(isd:ied,jsd:jed,nk))
+  allocate (diff_cbt_kppish(isd:ied,jsd:jed,nk))
+  allocate (diff_cbt_kppicon(isd:ied,jsd:jed,nk))
+  allocate (diff_cbt_kppbl(isd:ied,jsd:jed,nk,num_prog_tracers))
+  allocate (diff_cbt_kppdd(isd:ied,jsd:jed,nk,num_prog_tracers))
+  diff_cbt_kppiw(:,:,:)    = 0.0
+  diff_cbt_kppish(:,:,:)   = 0.0
+  diff_cbt_kppicon(:,:,:)  = 0.0
+  diff_cbt_kppbl(:,:,:,:)    = 0.0
+  diff_cbt_kppdd(:,:,:,:)    = 0.0
+
   allocate (diff_cbt_wave(isd:ied,jsd:jed,nk))
   allocate (diff_cbt_leewave(isd:ied,jsd:jed,nk))
   allocate (diff_cbt_drag(isd:ied,jsd:jed,nk))
-  allocate (diff_cbt_conv(isd:ied,jsd:jed,nk))
   diff_cbt_wave(:,:,:)    = 0.0 
   diff_cbt_leewave(:,:,:) = 0.0 
   diff_cbt_drag(:,:,:)    = 0.0 
-  diff_cbt_conv(:,:,:)    = 0.0 
 
   ! initialize clock ids 
   id_clock_vert_const       = mpp_clock_id('(Ocean vmix: constant)'        ,grain=CLOCK_ROUTINE)
@@ -980,7 +1009,6 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
   allocate( id_vdiffuse_k33_on_nrho(num_prog_tracers) )
   allocate( id_vdiffuse_diff_cbt(num_prog_tracers) )
   allocate( id_vdiffuse_diff_cbt_on_nrho(num_prog_tracers) )
-  allocate( id_vdiffuse_diff_cbt_conv(num_prog_tracers) )
   allocate( id_vdiffuse_sbc(num_prog_tracers) )
   allocate( id_vdiffuse_sbc_on_nrho(num_prog_tracers) )
   allocate( id_vdiffuse_bbc(num_prog_tracers) )
@@ -992,11 +1020,43 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
   id_vdiffuse_k33_on_nrho     =-1
   id_vdiffuse_diff_cbt=-1
   id_vdiffuse_diff_cbt_on_nrho=-1
-  id_vdiffuse_diff_cbt_conv=-1
   id_vdiffuse_sbc     =-1
   id_vdiffuse_sbc_on_nrho=-1
   id_vdiffuse_bbc     =-1
   id_vdiffuse_diss    =-1
+
+  allocate( id_vdiffuse_diff_cbt_kppiw(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppiw_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppish(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppish_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppicon(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppicon_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppbl(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppbl_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppdd(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_kppdd_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_wave(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_wave_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_leewave(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_leewave_on_nrho(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_drag(num_prog_tracers) )
+  allocate( id_vdiffuse_diff_cbt_drag_on_nrho(num_prog_tracers) )
+  id_vdiffuse_diff_cbt_kppiw=-1
+  id_vdiffuse_diff_cbt_kppiw_on_nrho=-1
+  id_vdiffuse_diff_cbt_kppish=-1
+  id_vdiffuse_diff_cbt_kppish_on_nrho=-1
+  id_vdiffuse_diff_cbt_kppicon=-1
+  id_vdiffuse_diff_cbt_kppicon_on_nrho=-1
+  id_vdiffuse_diff_cbt_kppbl=-1
+  id_vdiffuse_diff_cbt_kppbl_on_nrho=-1
+  id_vdiffuse_diff_cbt_kppdd=-1
+  id_vdiffuse_diff_cbt_kppdd_on_nrho=-1
+  id_vdiffuse_diff_cbt_wave=-1
+  id_vdiffuse_diff_cbt_wave_on_nrho=-1
+  id_vdiffuse_diff_cbt_leewave=-1
+  id_vdiffuse_diff_cbt_leewave_on_nrho=-1
+  id_vdiffuse_diff_cbt_drag=-1
+  id_vdiffuse_diff_cbt_drag_on_nrho=-1
 
   do n=1,num_prog_tracers
 
@@ -1025,14 +1085,10 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
               trim(T_prog(n)%name)//'_vdiffuse_diff_cbt', Grd%tracer_axes(1:3),      &
               Time%model_time, 'vert diffusion of heat due to diff_cbt', 'Watts/m^2',&
               missing_value=missing_value, range=(/-1.e16,1.e16/)) 
-         id_vdiffuse_diff_cbt_conv(n) = register_diag_field ('ocean_model',               &
-              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_conv', Grd%tracer_axes(1:3),      &
-              Time%model_time, 'vert diffusion of heat due to diff_cbt_conv','Watts/m^2', &
+         id_vdiffuse_diff_cbt_on_nrho(n) = register_diag_field ('ocean_model',               & 
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_on_nrho', Dens%neutralrho_axes(1:3),      & 
+              Time%model_time, 'vert diffusion of heat due to diff_cbt binned to neutral density', 'Watts/m^2',& 
               missing_value=missing_value, range=(/-1.e16,1.e16/))
-         id_vdiffuse_diff_cbt_on_nrho(n) = register_diag_field ('ocean_model',               &
-              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_on_nrho', Dens%neutralrho_axes(1:3),      &
-              Time%model_time, 'vert diffusion of heat due to diff_cbt binned to neutral density', 'Watts/m^2',&
-              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
          id_vdiffuse_sbc(n) = register_diag_field ('ocean_model',                        &
               trim(T_prog(n)%name)//'_vdiffuse_sbc', Grd%tracer_axes(1:3),               &
               Time%model_time, 'vert diffusion of heat due to surface flux', 'Watts/m^2',&
@@ -1078,10 +1134,6 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
          trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
               'vert diffusion due to diff_cbt for '//trim(T_prog(n)%longname)//' binned to neutral density',&
               trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
-         id_vdiffuse_diff_cbt_conv(n) = register_diag_field ('ocean_model',                     &
-         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_conv', Grd%tracer_axes(1:3),Time%model_time, &
-              'vert diffusion due to diff_cbt_conv for '//trim(T_prog(n)%longname),             &
-              trim(T_prog(n)%flux_units), missing_value=missing_value,range=(/-1e20,1e20/))
          id_vdiffuse_sbc(n) = register_diag_field ('ocean_model',                     &
          trim(T_prog(n)%name)//'_vdiffuse_sbc', Grd%tracer_axes(1:3), Time%model_time,&
               'vert diffusion due to surface flux for '//trim(T_prog(n)%longname),    &
@@ -1098,6 +1150,142 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
          trim(T_prog(n)%name)//'_vdiffuse_diss', Grd%tracer_axes(1:3), Time%model_time,         &
               'dissipation of squared tracer via vert diffusion for '//trim(T_prog(n)%longname),&
               '[kg/(m^2*sec)]^2', missing_value=missing_value, range=(/-1e20,1e20/))         
+    endif  
+
+  enddo
+
+  do n=1,num_prog_tracers
+
+     if (trim(T_prog(n)%name) == 'temp') then
+         id_vdiffuse_diff_cbt_kppiw(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppiw', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppiw', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_kppiw_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppiw_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppiw binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_kppish(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppish', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppish', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_kppish_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppish_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppish binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_kppicon(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppicon', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppicon', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_kppicon_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppicon_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppicon binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_kppbl(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppbl', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppbl', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_kppbl_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppbl_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppbl binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_kppdd(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppdd', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppdd', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_kppdd_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppdd_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_kppdd binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_wave(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_wave', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_wave', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_wave_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_wave_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_wave binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_leewave(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_leewave', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_leewave', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_leewave_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_leewave_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_leewave binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+         id_vdiffuse_diff_cbt_drag(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_drag', Grd%tracer_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_drag', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/))
+         id_vdiffuse_diff_cbt_drag_on_nrho(n) = register_diag_field ('ocean_model',               &
+              trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_drag_on_nrho', Dens%neutralrho_axes(1:3),      &
+              Time%model_time, 'vert diffusion of heat due to diff_cbt_drag binned to neutral density', 'Watts/m^2',&
+              missing_value=missing_value, range=(/-1.e16,1.e16/)) 
+     else 
+         id_vdiffuse_diff_cbt_kppiw(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppiw', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppiw for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_kppiw_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppiw_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppiw for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_kppish(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppish', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppish for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_kppish_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppish_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppish for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_kppicon(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppicon', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppicon for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_kppicon_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppicon_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppicon for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_kppbl(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppbl', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppbl for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_kppbl_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppbl_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppbl for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_kppdd(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppdd', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppdd for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_kppdd_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_kppdd_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_kppdd for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_wave(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_wave', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_wave for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_wave_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_wave_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_wave for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_leewave(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_leewave', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_leewave for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_leewave_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_leewave_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_leewave for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
+         id_vdiffuse_diff_cbt_drag(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_drag', Grd%tracer_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_drag for '//trim(T_prog(n)%longname),                &
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))         
+         id_vdiffuse_diff_cbt_drag_on_nrho(n) = register_diag_field ('ocean_model',                        &
+         trim(T_prog(n)%name)//'_vdiffuse_diff_cbt_drag_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time,   &
+              'vert diffusion due to diff_cbt_drag for '//trim(T_prog(n)%longname)//' binned to neutral density',&
+              trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1e20,1e20/))
     endif  
 
   enddo
@@ -3002,7 +3190,6 @@ subroutine vert_mix_coeff(Time, Thickness, Velocity, T_prog,   &
         do i=isd,ied
            diff_cbt(i,j,k,1)    = 0.0
            diff_cbt(i,j,k,2)    = 0.0
-           diff_cbt_conv(i,j,k) = 0.0
            visc_cbu(i,j,k)      = 0.0
            visc_cbt(i,j,k)      = 0.0
         enddo
@@ -3025,9 +3212,10 @@ subroutine vert_mix_coeff(Time, Thickness, Velocity, T_prog,   &
 
   elseif(MIX_SCHEME == VERTMIX_KPP_MOM4P1) then 
     call mpp_clock_begin(id_clock_vert_kpp_mom4p1)
-    call vert_mix_kpp_mom4p1(aidif, Time, Thickness, Velocity, T_prog, T_diag, Dens,    &
-                      swflx, sw_frac_zt, pme, river, visc_cbu, diff_cbt, diff_cbt_conv, & 
-                      hblt_depth, do_wave)
+    call vert_mix_kpp_mom4p1(aidif, Time, Thickness, Velocity, T_prog, T_diag, Dens,     &
+                      swflx, sw_frac_zt, pme, river, visc_cbu, diff_cbt, hblt_depth,     &
+                      diff_cbt_kppiw, diff_cbt_kppish, diff_cbt_kppicon, diff_cbt_kppbl, &
+                      diff_cbt_kppdd, do_wave)
     ! since this scheme is frozen, we do not compute visc_cbt. 
     ! for vertical reynolds diagnostics, we set  
     visc_cbt = visc_cbu
@@ -3438,7 +3626,7 @@ subroutine vert_diffuse_implicit(diff_cbt, index_salt, Time, Thickness, Dens, T_
 
   ! diagnose some pieces of implicit vertical diffusion 
   call vert_diffuse_watermass_potrho_diag(Time, Thickness, Dens, T_prog, &
-                                          diff_cbt, diff_cbt_conv)
+                                          diff_cbt, diff_cbt_kppicon)
 
 end subroutine vert_diffuse_implicit
 ! </SUBROUTINE> NAME="vert_diffuse_implicit"
@@ -5269,8 +5457,8 @@ subroutine vert_diffuse_implicit_diag(Time, Thickness, Dens, T_prog, diff_cbt, w
       endif
    endif
 
-  ! impacts from diff_cbt_conv
-  if(id_vdiffuse_diff_cbt_conv(n) > 0) then
+  ! impacts from diff_cbt_kppiw 
+  if(id_vdiffuse_diff_cbt_kppiw(n) > 0 .or. id_vdiffuse_diff_cbt_kppiw_on_nrho(n) > 0) then
       wrk1_2d(:,:) = 0.0
       wrk2_2d(:,:) = 0.0
       wrk1(:,:,:)  = 0.0
@@ -5278,7 +5466,7 @@ subroutine vert_diffuse_implicit_diag(Time, Thickness, Dens, T_prog, diff_cbt, w
          kp = min(k+1,nk)
          do j=jsc,jec
             do i=isc,iec
-               diffusivity  = rho0*diff_cbt_conv(i,j,k)
+               diffusivity  = rho0*diff_cbt_kppiw(i,j,k) 
                wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
                     (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
                     /Thickness%dzwt(i,j,k)
@@ -5287,8 +5475,195 @@ subroutine vert_diffuse_implicit_diag(Time, Thickness, Dens, T_prog, diff_cbt, w
             enddo
          enddo
       enddo
-      call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_conv(n),wrk1(:,:,:)*T_prog(n)%conversion)
-  endif
+      if (id_vdiffuse_diff_cbt_kppiw(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_kppiw(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_kppiw_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_kppiw_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_kppish 
+  if(id_vdiffuse_diff_cbt_kppish(n) > 0 .or. id_vdiffuse_diff_cbt_kppish_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_kppish(i,j,k) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_kppish(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_kppish(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_kppish_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_kppish_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_kppicon 
+  if(id_vdiffuse_diff_cbt_kppicon(n) > 0 .or. id_vdiffuse_diff_cbt_kppicon_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_kppicon(i,j,k) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_kppicon(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_kppicon(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_kppicon_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_kppicon_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_kppbl 
+  if(id_vdiffuse_diff_cbt_kppbl(n) > 0 .or. id_vdiffuse_diff_cbt_kppbl_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_kppbl(i,j,k,nmix) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_kppbl(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_kppbl(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_kppbl_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_kppbl_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_kppdd 
+  if(id_vdiffuse_diff_cbt_kppdd(n) > 0 .or. id_vdiffuse_diff_cbt_kppdd_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_kppdd(i,j,k,nmix) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_kppdd(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_kppdd(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_kppdd_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_kppdd_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_wave 
+  if(id_vdiffuse_diff_cbt_wave(n) > 0 .or. id_vdiffuse_diff_cbt_wave_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_wave(i,j,k) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_wave(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_wave(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_wave_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_wave_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_leewave 
+  if(id_vdiffuse_diff_cbt_leewave(n) > 0 .or. id_vdiffuse_diff_cbt_leewave_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_leewave(i,j,k) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_leewave(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_leewave(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_leewave_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_leewave_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
+
+  ! impacts from diff_cbt_drag 
+  if(id_vdiffuse_diff_cbt_drag(n) > 0 .or. id_vdiffuse_diff_cbt_drag_on_nrho(n) > 0) then
+      wrk1_2d(:,:) = 0.0
+      wrk2_2d(:,:) = 0.0
+      wrk1(:,:,:)  = 0.0
+      do k=1,nk
+         kp = min(k+1,nk)
+         do j=jsc,jec
+            do i=isc,iec
+               diffusivity  = rho0*diff_cbt_drag(i,j,k) 
+               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                    &
+                    (T_prog(n)%field(i,j,k,taup1)-T_prog(n)%field(i,j,kp,taup1))&
+                    /Thickness%dzwt(i,j,k)
+               wrk1(i,j,k)  = wrk1_2d(i,j)-wrk2_2d(i,j)
+               wrk1_2d(i,j) = wrk2_2d(i,j)
+            enddo
+         enddo
+      enddo
+      if (id_vdiffuse_diff_cbt_drag(n) > 0) then
+         call diagnose_3d(Time, Grd, id_vdiffuse_diff_cbt_drag(n), wrk1(:,:,:)*T_prog(n)%conversion)
+      endif
+      if (id_vdiffuse_diff_cbt_drag_on_nrho(n) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_vdiffuse_diff_cbt_drag_on_nrho(n), wrk1*T_prog(n)%conversion)
+      endif
+   endif
 
   ! impacts from K33 
   if(id_vdiffuse_k33(n) > 0 .or. id_vdiffuse_k33_on_nrho(n) > 0) then 
@@ -6192,7 +6567,7 @@ end subroutine vert_diffuse_watermass_diag
 ! Modifications for APE diagnostics.
 !
 ! Diagnose contributions from time-implicit vertical diffusion
-! acting on watermasses from diff_cbt, diff_cbt_conv, and k33
+! acting on watermasses from diff_cbt, diff_cbt_kppicon, and k33
 ! using depth referenced potential density rather than
 ! locally referenced potential density.
 !
@@ -6213,14 +6588,14 @@ end subroutine vert_diffuse_watermass_diag
 ! </DESCRIPTION>
 !
 subroutine vert_diffuse_watermass_potrho_diag(Time, Thickness, Dens, T_prog, &
-                                              diff_cbt, diff_cbt_conv)
+                                              diff_cbt, diff_cbt_kppicon)
 
   type(ocean_time_type),          intent(in) :: Time  
   type(ocean_thickness_type),     intent(in) :: Thickness
   type(ocean_density_type),       intent(in) :: Dens
   type(ocean_prog_tracer_type),   intent(in) :: T_prog(:)
   real, dimension(isd:,jsd:,:,:), intent(in) :: diff_cbt
-  real, dimension(isd:,jsd:,:),   intent(in) :: diff_cbt_conv
+  real, dimension(isd:,jsd:,:),   intent(in) :: diff_cbt_kppicon
 
   integer :: taup1, tau
   integer :: i, j, k, kp, nmix
@@ -6251,7 +6626,7 @@ subroutine vert_diffuse_watermass_potrho_diag(Time, Thickness, Dens, T_prog, &
         kp = min(k+1,nk)
         do j=jsc,jec
            do i=isc,iec
-              diffusivity  = rho0*Grd%tmask(i,j,kp)*diff_cbt_conv(i,j,k) 
+              diffusivity  = rho0*Grd%tmask(i,j,kp)*diff_cbt_kppicon(i,j,k) 
               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                                      &
                    (T_prog(index_temp)%field(i,j,k,taup1)-T_prog(index_temp)%field(i,j,kp,taup1))&
                    /Thickness%dzwt(i,j,k)
@@ -6268,7 +6643,7 @@ subroutine vert_diffuse_watermass_potrho_diag(Time, Thickness, Dens, T_prog, &
         kp = min(k+1,nk)
         do j=jsc,jec
            do i=isc,iec
-              diffusivity  = rho0*Grd%tmask(i,j,kp)*diff_cbt_conv(i,j,k) 
+              diffusivity  = rho0*Grd%tmask(i,j,kp)*diff_cbt_kppicon(i,j,k) 
               wrk2_2d(i,j) = diffusivity*Grd%tmask(i,j,kp)*                                      &
                    (T_prog(index_salt)%field(i,j,k,taup1)-T_prog(index_salt)%field(i,j,kp,taup1))&
                    /Thickness%dzwt(i,j,k)
