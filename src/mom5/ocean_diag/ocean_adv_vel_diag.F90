@@ -1019,19 +1019,26 @@ subroutine transport_on_nrho (Time, Dens, Adv_vel)
             do j=jsc,jec
                do i=isc,iec
                   if (k_rho == 1) then
-                     if(Dens%neutralrho(i,j,k) < Dens%neutralrho_bounds(k_rho)) then 
+                     if(Dens%neutralrho_et(i,j,k) < Dens%neutralrho_bounds(k_rho+1)) then 
                          tmp(1,i,j) = tmp(1,i,j) + Adv_vel%uhrho_et(i,j,k)
+                     endif
+                     if(Dens%neutralrho_nt(i,j,k) < Dens%neutralrho_bounds(k_rho+1)) then 
                          tmp(2,i,j) = tmp(2,i,j) + Adv_vel%vhrho_nt(i,j,k)
                      endif
                   elseif(k_rho < neutralrho_nk) then
-                     if( (Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho(i,j,k)) .and.  &
-                         (Dens%neutralrho(i,j,k)        <  Dens%neutralrho_bounds(k_rho+1)) ) then 
+                     if( (Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho_et(i,j,k)) .and.  &
+                         (Dens%neutralrho_et(i,j,k)        <  Dens%neutralrho_bounds(k_rho+1)) ) then 
                            tmp(1,i,j) = tmp(1,i,j) + Adv_vel%uhrho_et(i,j,k)
+                     endif
+                     if( (Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho_nt(i,j,k)) .and.  &
+                         (Dens%neutralrho_nt(i,j,k)        <  Dens%neutralrho_bounds(k_rho+1)) ) then 
                            tmp(2,i,j) = tmp(2,i,j) + Adv_vel%vhrho_nt(i,j,k)
                      endif
                   else    ! if (k_rho == neutralrho_nk) then
-                     if(Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho(i,j,k)) then 
+                     if(Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho_et(i,j,k)) then 
                          tmp(1,i,j) = tmp(1,i,j) + Adv_vel%uhrho_et(i,j,k)             
+                     endif
+                     if(Dens%neutralrho_bounds(k_rho) <= Dens%neutralrho_nt(i,j,k)) then 
                          tmp(2,i,j) = tmp(2,i,j) + Adv_vel%vhrho_nt(i,j,k)
                      endif
                   endif

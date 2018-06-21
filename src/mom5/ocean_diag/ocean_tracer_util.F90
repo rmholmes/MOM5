@@ -883,21 +883,39 @@ end subroutine rebin_onto_rho
 ! Helper function for diagnosting 3D data mapped onto density levels.
 ! </DESCRIPTION>
 !
-subroutine diagnose_3d_rho(Time, Dens, id_name, data)
+subroutine diagnose_3d_rho(Time, Dens, id_name, data, gridin)
   type(ocean_time_type), intent(in) :: Time
   type(ocean_density_type), intent(in) :: Dens
   integer, intent(in) :: id_name
   real, dimension(isd:,jsd:,:), intent(in) :: data
+  integer, optional, intent(in) :: gridin
 
+  integer :: grid
   real :: nrho_work(isd:ied,jsd:jed,size(Dens%neutralrho_ref(:)))
   logical :: used
 
   integer :: neutralrho_nk
-
+  
+  ! Choose grid location:
+  ! grid = 0 => T-cell centers (default), 
+  ! grid = 1 => T-cell East face
+  ! grid = 2 => T-cell North face
+  if(present(gridin)) then
+     grid=gridin
+  else
+     grid=0
+  endif
+  
   if (id_name > 0) then
      neutralrho_nk = size(Dens%neutralrho_ref(:))
      nrho_work(:,:,:) = 0.0
-     call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho, data, nrho_work)
+     if (grid.eq.1) then
+       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho_et, data, nrho_work)
+     else if (grid.eq.2) then
+       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho_nt, data, nrho_work)
+     else
+       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho, data, nrho_work)
+     endif
      used = send_data (id_name, nrho_work(:,:,:), &
           Time%model_time,                        &
           is_in=isc, js_in=jsc, ks_in=1, ie_in=iec, je_in=jec, ke_in=neutralrho_nk)

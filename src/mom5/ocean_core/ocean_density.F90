@@ -411,7 +411,7 @@ use time_manager_mod,    only: time_type, increment_time
 use field_manager_mod,   only: fm_get_index
 
 use ocean_domains_mod,    only: get_local_indices
-use ocean_operators_mod,  only: FDX_T, FDY_T, FMX, FMY, S2D 
+use ocean_operators_mod,  only: FDX_T, FDY_T, FMX, FMY, S2D, FAX, FAY
 use ocean_parameters_mod, only: GEOPOTENTIAL, ZSTAR, ZSIGMA, PRESSURE, PSTAR, PSIGMA 
 use ocean_parameters_mod, only: CONSERVATIVE_TEMP, POTENTIAL_TEMP, PRACTICAL_SALT, PREFORMED_SALT
 use ocean_parameters_mod, only: missing_value, onefourth, onehalf, rho0r, rho0, grav
@@ -973,6 +973,8 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
     allocate(Dens%rho_dztr_tau(isd:ied,jsd:jed,nk))
     allocate(Dens%potrho(isd:ied,jsd:jed,nk))
     allocate(Dens%neutralrho(isd:ied,jsd:jed,nk))
+    allocate(Dens%neutralrho_et(isd:ied,jsd:jed,nk))
+    allocate(Dens%neutralrho_nt(isd:ied,jsd:jed,nk))
     allocate(Dens%pressure_at_depth(isd:ied,jsd:jed,nk))
     allocate(Dens%drhodT(isd:ied,jsd:jed,nk))
     allocate(Dens%dpotrhodT(isd:ied,jsd:jed,nk))
@@ -998,6 +1000,8 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
        Dens%rho_fresh(:,:,k)         = 1000.0*Grid%tmask(:,:,k)
        Dens%potrho(:,:,k)            = rho0*Grid%tmask(:,:,k)
        Dens%neutralrho(:,:,k)        = rho0*Grid%tmask(:,:,k)
+       Dens%neutralrho_et(:,:,k)     = rho0*Grid%tmask(:,:,k)
+       Dens%neutralrho_nt(:,:,k)     = rho0*Grid%tmask(:,:,k)
        Dens%pressure_at_depth(:,:,k) = rho0*grav*Thickness%depth_zt(:,:,k)*c2dbars
     enddo
     Dens%rho(:,:,:,1)            = Grid%tmask(:,:,:)*rho0 
@@ -1183,6 +1187,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
      T_diag(ind_neutralrho)%field(:,:,:) = Dens%neutralrho(:,:,:)
    endif
 
+   ! Compute neutral density on East and North T-cell faces:
+   do k=1,nk
+      Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+      Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+   enddo
+   
    ! compute some density related diagnostic factors
    ! initialize neutralrho_interval_r first
    neutralrho_interval  = (neutralrho_max-neutralrho_min)/(epsln+layer_nk)
@@ -2024,6 +2034,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   if (ind_neutralrho .gt. 0) then
     T_diag(ind_neutralrho)%field(:,:,:) = Dens%neutralrho(:,:,:)
   endif
+
+  ! Compute neutral density on East and North T-cell faces
+  do k=1,nk
+     Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+     Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+  enddo
 
   ! compute potential density for diagnostic purposes 
   Dens%potrho(:,:,:) = Grd%tmask(:,:,:) &

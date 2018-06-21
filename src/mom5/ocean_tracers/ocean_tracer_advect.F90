@@ -2061,10 +2061,10 @@ subroutine horz_advect_tracer(Time, Adv_vel, Thickness, Dens, T_prog, Tracer, nt
          call diagnose_3d(Time, Grd, id_yflux_adv(ntracer), Tracer%conversion*flux_y(:,:,:))
       endif
       if (id_xflux_adv_on_nrho(ntracer) > 0) then
-         call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(ntracer), Tracer%conversion*flux_x)
+         call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(ntracer), Tracer%conversion*flux_x, 1)
       endif
       if (id_yflux_adv_on_nrho(ntracer) > 0) then
-         call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(ntracer), Tracer%conversion*flux_y)
+         call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(ntracer), Tracer%conversion*flux_y, 2)
       endif
 
       if (id_xflux_adv_int_z(ntracer) > 0) then 
@@ -4336,7 +4336,7 @@ subroutine advect_tracer_sweby_all(Time, Adv_vel, Dens, T_prog, Thickness, dtime
      call mpp_clock_begin(id_clock_mdfl_sweby_dia)
      if (id_xflux_adv(n) > 0) call diagnose_3d(Time, Grd, id_xflux_adv(n), T_prog(n)%conversion*flux_x(:,:,:))
      if (id_xflux_adv_on_nrho(n) > 0) then
-        call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(n), T_prog(n)%conversion*flux_x)
+        call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(n), T_prog(n)%conversion*flux_x, 1)
      endif
 
      if (id_advection_x(n) > 0) call diagnose_3d(Time, Grd, id_advection_x(n), T_prog(n)%conversion*wrk1(:,:,:))
@@ -4470,7 +4470,7 @@ subroutine advect_tracer_sweby_all(Time, Adv_vel, Dens, T_prog, Thickness, dtime
      if (id_yflux_adv(n) > 0) call diagnose_3d(Time, Grd, id_yflux_adv(n), &
                       T_prog(n)%conversion*flux_y(:,:,:))
      if (id_yflux_adv_on_nrho(n) > 0) then
-        call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(n), T_prog(n)%conversion*flux_y)
+        call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(n), T_prog(n)%conversion*flux_y, 2)
      endif
 
      if (id_advection_y(n) > 0) call diagnose_3d(Time, Grd, id_advection_y(n), &
