@@ -2020,7 +2020,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   type(ocean_density_type),       intent(inout) :: Dens
   type(ocean_diag_tracer_type),   intent(inout) :: T_diag(:)
   
-  integer :: tau
+  integer :: tau, k
 
   tau   = Time%tau
 
