@@ -241,6 +241,14 @@ module ocean_density_mod
 !  to potential density.
 !  </DATA> 
 !
+!  <DATA NAME="nrho_face_bin" TYPE="logical">
+!  Set to true to use neutral density array averaged onto
+!  T-cell faces for binning the lateral mass/tracer fluxes,
+!  instead of using the neutral density at the adjacent
+!  T-cell center.
+!  Default nrho_face_bin=.false.
+!  </DATA>
+!
 !  <DATA NAME="neutral_density_omega" TYPE="logical">
 !  Set to true to compute the neutral density according to 
 !  the omega method based on Klocker and McDougall. 
@@ -656,6 +664,7 @@ real :: potrho_max   = 1038.0  ! (kg/m^3)
 
 ! for diagnostic partitioning of vertical according to 
 ! rational polynomial approximation to neutral density
+logical :: nrho_face_bin          = .false.
 logical :: neutral_density_omega  = .false.
 logical :: neutral_density_potrho = .true.
 logical :: neutral_density_theta  = .false.
@@ -713,6 +722,7 @@ namelist /ocean_density_nml/ s_test, t_test, p_test, press_standard,            
                              sn_test, tn_test,                                        &
                              eos_linear, alpha_linear_eos, beta_linear_eos,           & 
                              eos_preteos10, eos_teos10,                               &
+                             nrho_face_bin,                                           &
                              potrho_press, potrho_min, potrho_max,                    &
                              neutralrho_min, neutralrho_max,                          &
                              layer_nk, theta_min, theta_max,                          &
@@ -924,6 +934,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
         write(stdoutunit,*) &
         '==>Warning: rho0_density=.true, so rho=rho0 everywhere. Is this really what you wish to do?'
     endif
+
+    if(nrho_face_bin) then
+        write (stdoutunit,'(/1x,a)') &
+        ' ==> Note: Computing nrho binning of mass/tracer fluxes using T-cell face averaged neutral density.'
+    endif
+    Dens%nrho_face_bin = nrho_face_bin
 
     if(neutral_density_omega) then 
         write (stdoutunit,'(/1x,a)') &
@@ -1188,10 +1204,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
    endif
 
    ! Compute neutral density on East and North T-cell faces:
-   do k=1,nk
-      Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
-      Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
-   enddo
+   if (Dens%nrho_face_bin) then
+     do k=1,nk
+        Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+        Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+     enddo
+   end if
    
    ! compute some density related diagnostic factors
    ! initialize neutralrho_interval_r first
@@ -2036,10 +2054,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   endif
 
   ! Compute neutral density on East and North T-cell faces
-  do k=1,nk
-     Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
-     Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
-  enddo
+  if (Dens%nrho_face_bin) then
+    do k=1,nk
+       Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+       Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+    enddo
+  end if
 
   ! compute potential density for diagnostic purposes 
   Dens%potrho(:,:,:) = Grd%tmask(:,:,:) &
