@@ -417,6 +417,7 @@ module ocean_types_mod
 
   type , public :: ocean_density_type
      logical                               :: use_teos10           ! for using the TEOS-2010 equation of state recommendations 
+     logical                               :: nrho_face_bin        ! for binning mass/tracer transports using T-cell face neutralrho
      real, dimension(isd:ied,jsd:jed,nk,3) :: rho                  ! in situ density (kg/m^3) at time levels
      real, dimension(isd:ied,jsd:jed,nk,3) :: rho_salinity         ! salinity used in rho calculations (psu or g/kg) at time levels
      real, dimension(isd:ied,jsd:jed,nk)   :: rho_dztr_tau         ! rho_dztr at time tau 1/(kg/m^3) (for diagnostic uses) 
@@ -960,6 +961,7 @@ module ocean_types_mod
 
   type, public ::  ocean_density_type
      logical                                :: use_teos10              ! for using the TEOS-2010 equation of state recommendations 
+     logical                                :: nrho_face_bin           ! for binning mass/tracer transports using T-cell face neutralrho
      real, _ALLOCATABLE, dimension(:,:,:,:) :: rho               _NULL ! in situ density (kg/m^3) at time levels
      real, _ALLOCATABLE, dimension(:,:,:,:) :: rho_salinity      _NULL ! salinity used in density calculations (psu or g/kg) 
      real, _ALLOCATABLE, dimension(:,:,:)   :: rho_dztr_tau      _NULL ! rho_dztr at time tau 1/(kg/m^3) (for diagnostic uses) 

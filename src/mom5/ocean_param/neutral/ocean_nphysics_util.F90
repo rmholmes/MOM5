@@ -3017,16 +3017,35 @@ subroutine transport_on_nrho_gm (Time, Dens, tx_trans_gm, ty_trans_gm)
          do k=1,nk-1
             do j=jsc,jec
                do i=isc,iec
-                  if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho(i,j,k)  ) then
-                      if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho(i,j,k+1)) then 
-                          W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho(i,j,k)
-                          W2= Dens%neutralrho(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
-                          work(i,j,k_rho,1) = (tx_trans_gm(i,j,k+1)*W1 +tx_trans_gm(i,j,k)*W2) &
-                                              /(W1 + W2 + epsln)
-                          work(i,j,k_rho,2) = (ty_trans_gm(i,j,k+1)*W1 +ty_trans_gm(i,j,k)*W2) &
-                                              /(W1 + W2 + epsln)
-                      endif
-                  endif
+                  if (Dens%nrho_face_bin) then ! Do binning with ET and NT neutralrho arrays
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho_et(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho_et(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho_et(i,j,k)
+                            W2= Dens%neutralrho_et(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,1) = (tx_trans_gm(i,j,k+1)*W1 +tx_trans_gm(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho_nt(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho_nt(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho_nt(i,j,k)
+                            W2= Dens%neutralrho_nt(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,2) = (ty_trans_gm(i,j,k+1)*W1 +ty_trans_gm(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                  else ! Do binning with T-cell center neutralrho array
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho(i,j,k)
+                            W2= Dens%neutralrho(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,1) = (tx_trans_gm(i,j,k+1)*W1 +tx_trans_gm(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                            work(i,j,k_rho,2) = (ty_trans_gm(i,j,k+1)*W1 +ty_trans_gm(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                 endif
                enddo
             enddo
          enddo

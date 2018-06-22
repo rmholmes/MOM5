@@ -900,7 +900,7 @@ subroutine diagnose_3d_rho(Time, Dens, id_name, data, gridin)
   ! grid = 0 => T-cell centers (default), 
   ! grid = 1 => T-cell East face
   ! grid = 2 => T-cell North face
-  if(present(gridin)) then
+  if (Dens%nrho_face_bin .and. present(gridin)) then
      grid=gridin
   else
      grid=0
