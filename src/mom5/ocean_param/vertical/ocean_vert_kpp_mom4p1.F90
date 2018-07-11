@@ -1047,11 +1047,11 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
   real, dimension(isd:,jsd:),      intent(inout) :: hblt_depth
   real, dimension(isd:,jsd:,:),    intent(inout) :: visc_cbu
   real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt
-  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppiw
-  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppish
-  real, dimension(isd:,jsd:,:),    intent(inout) :: diff_cbt_kppicon
-  real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt_kppbl
-  real, dimension(isd:,jsd:,:,:),  intent(inout) :: diff_cbt_kppdd
+  real, dimension(isd:,jsd:,:),    intent(out)   :: diff_cbt_kppiw
+  real, dimension(isd:,jsd:,:),    intent(out)   :: diff_cbt_kppish
+  real, dimension(isd:,jsd:,:),    intent(out)   :: diff_cbt_kppicon
+  real, dimension(isd:,jsd:,:,:),  intent(out)   :: diff_cbt_kppbl
+  real, dimension(isd:,jsd:,:,:),  intent(out)   :: diff_cbt_kppdd
   logical,                         intent(in)    :: do_wave
 
 
@@ -1072,6 +1072,13 @@ subroutine vert_mix_kpp_mom4p1 (aidif, Time, Thickness, Velocity, T_prog, T_diag
   taum1 = Time%taum1
 
   visc_cbu(:,:,:) = 0.0
+
+  !--------- Initialize diffusivity components to zero for diagnostics
+  diff_cbt_kppiw(:,:,:) = 0.0
+  diff_cbt_kppish(:,:,:) = 0.0
+  diff_cbt_kppicon(:,:,:) = 0.0
+  diff_cbt_kppbl(:,:,:,:) = 0.0
+  diff_cbt_kppdd(:,:,:,:) = 0.0
 
   if(index_frazil > 0) then 
     do j = jsd, jed
