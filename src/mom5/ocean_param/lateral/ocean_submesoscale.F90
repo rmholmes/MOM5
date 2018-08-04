@@ -332,6 +332,8 @@ integer :: id_tform_salt_subdiff_on_nrho =-1
 
 integer, dimension(:), allocatable :: id_xflux_submeso       ! i-directed flux 
 integer, dimension(:), allocatable :: id_yflux_submeso       ! j-directed flux 
+integer, dimension(:), allocatable :: id_xflux_submeso_on_nrho ! i-directed flux on neutral density
+integer, dimension(:), allocatable :: id_yflux_submeso_on_nrho ! j-directed flux on neutral density
 integer, dimension(:), allocatable :: id_zflux_submeso       ! k-directed flux 
 integer, dimension(:), allocatable :: id_xflux_submeso_int_z ! vertically integrated i-flux
 integer, dimension(:), allocatable :: id_yflux_submeso_int_z ! vertically integrated j-flux
@@ -1017,6 +1019,8 @@ contains
 
     allocate (id_xflux_submeso(num_prog_tracers))
     allocate (id_yflux_submeso(num_prog_tracers))
+    allocate (id_xflux_submeso_on_nrho(num_prog_tracers))
+    allocate (id_yflux_submeso_on_nrho(num_prog_tracers))
     allocate (id_zflux_submeso(num_prog_tracers))
     allocate (id_xflux_submeso_int_z(num_prog_tracers))
     allocate (id_yflux_submeso_int_z(num_prog_tracers))
@@ -1043,6 +1047,16 @@ contains
                 Grd%tracer_axes_flux_y(1:3), Time%model_time,        &
                 'cp*submeso_yflux*dxt*rho_dzt*temp',                 &
                 'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+           id_xflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_xflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_x(1:3), Time%model_time,        &
+                'cp*submeso_xflux*dyt*rho_dzt*temp binned to neutral density',&
+                'Watt', missing_value=missing_value, range=(/-1.e20,1.e20/))
+           id_yflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_yflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_y(1:3), Time%model_time,        &
+                'cp*submeso_yflux*dxt*rho_dzt*temp binned to neutral density',&
+                'Watt', missing_value=missing_value, range=(/-1.e20,1.e20/))
            id_zflux_submeso(n) = register_diag_field ('ocean_model', &
                 trim(T_prog(n)%name)//'_zflux_submeso',              &
                 Grd%tracer_axes_wt(1:3), Time%model_time,            &
@@ -1112,6 +1126,16 @@ contains
                 'submeso_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name), &
                 'kg/sec', missing_value=missing_value,                        &
                 range=(/-1.e18,1.e18/))
+           id_xflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_xflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_x(1:3), Time%model_time,        &
+                'submeso_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+                'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
+           id_yflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_yflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_y(1:3), Time%model_time,        &
+                'submeso_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+                'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
            id_zflux_submeso(n) = register_diag_field ('ocean_model',          &
                 trim(T_prog(n)%name)//'_zflux_submeso',                       &
                 Grd%tracer_axes_wt(1:3), Time%model_time,                     &
@@ -2521,6 +2545,9 @@ subroutine compute_flux_x(Time,n,Tracer)
   if(id_xflux_submeso(n) > 0) then 
      call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*Tracer%conversion*flux_x(:,:,:))
   endif
+  if(id_xflux_submeso_on_nrho(n) > 0) then 
+     call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*Tracer%conversion*flux_x, 1)
+  endif
 
   if(id_xflux_submeso_int_z(n) > 0) then 
       wrk1_2d = 0.0
@@ -2634,6 +2661,9 @@ subroutine compute_flux_y(Time,n,Tracer)
   ! diagnostics 
   if(id_yflux_submeso(n) > 0) then 
      call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*Tracer%conversion*flux_y(:,:,:))
+  endif
+  if(id_yflux_submeso_on_nrho(n) > 0) then 
+     call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*Tracer%conversion*flux_y, 2)
   endif
 
   if(id_yflux_submeso_int_z(n) > 0) then 
@@ -2931,6 +2961,9 @@ subroutine compute_submeso_upwind(Time, Dens, T_prog)
      if(id_xflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_x(:,:,:))
      endif
+     if(id_xflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_x, 1)
+     endif
      if(id_xflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
          do k=1,nk
@@ -2945,6 +2978,9 @@ subroutine compute_submeso_upwind(Time, Dens, T_prog)
 
      if(id_yflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_y(:,:,:))
+     endif
+     if(id_yflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_y, 2)
      endif
      if(id_yflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
@@ -3246,6 +3282,9 @@ subroutine compute_submeso_sweby(Thickness, Time, Dens, T_prog)
      if(id_xflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_x(:,:,:))
      endif
+     if(id_xflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_x, 1)
+     endif
      if(id_xflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
          do k=1,nk
@@ -3260,6 +3299,9 @@ subroutine compute_submeso_sweby(Thickness, Time, Dens, T_prog)
 
      if(id_yflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_y(:,:,:))
+     endif
+     if(id_yflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_y, 2)
      endif
      if(id_yflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
