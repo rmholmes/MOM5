@@ -2380,8 +2380,8 @@ subroutine compute_submeso_skewsion(Thickness, Dens, Time, T_prog)
   
   do n=1,num_prog_tracers
 
-     call compute_flux_x(Time,n,T_prog(n))
-     call compute_flux_y(Time,n,T_prog(n))
+     call compute_flux_x(Time,n,T_prog(n),Dens)
+     call compute_flux_y(Time,n,T_prog(n),Dens)
      call compute_flux_z(Time,n,T_prog(n))
 
      if (Grd%tripolar) then 
@@ -2481,11 +2481,12 @@ end subroutine compute_submeso_skewsion
 !
 ! </DESCRIPTION>
 !
-subroutine compute_flux_x(Time,n,Tracer)
+subroutine compute_flux_x(Time,n,Tracer,Dens)
 
   type(ocean_time_type),        intent(in) :: Time
   integer,                      intent(in) :: n
   type(ocean_prog_tracer_type), intent(in) :: Tracer
+  type(ocean_density_type),     intent(in)    :: Dens
 
   integer :: i, j, k
   integer :: ip, kr
@@ -2598,11 +2599,12 @@ end subroutine compute_flux_x
 !
 ! </DESCRIPTION>
 !
-subroutine compute_flux_y(Time,n,Tracer)
+subroutine compute_flux_y(Time,n,Tracer,Dens)
 
   type(ocean_time_type),        intent(in) :: Time
   integer,                      intent(in) :: n
   type(ocean_prog_tracer_type), intent(in) :: Tracer
+  type(ocean_density_type),     intent(in)    :: Dens
 
   integer :: i, j, k
   integer :: jq, kr
