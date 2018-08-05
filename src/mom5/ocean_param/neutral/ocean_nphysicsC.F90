@@ -1229,8 +1229,8 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
   id_flux_y_ndiffuse_int_z = -1
   id_flux_x_gm_int_z       = -1
   id_flux_y_gm_int_z       = -1
+  id_flux_x_ndiffuse_on_nrho = -1
   id_flux_y_ndiffuse_on_nrho = -1
-  id_flux_z_ndiffuse_on_nrho = -1
   id_flux_x_gm_on_nrho       = -1
   id_flux_y_gm_on_nrho       = -1
 
@@ -1290,7 +1290,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
 
          id_flux_x_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
               trim(T_prog(n)%name)//'_xflux_ndiffuse_on_nrho',               &
-              Grd%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
               'cp*ndiffuse_xflux*dyt*rho_dzt*temp binned to neutral density',&
               'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_y_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
@@ -1300,7 +1300,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
               'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_x_gm_on_nrho(n) = register_diag_field ('ocean_model', &
               trim(T_prog(n)%name)//'_xflux_gm_on_nrho',               &
-              Grd%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
               'cp*gm_xflux*dyt*rho_dzt*temp binned to neutral density',&
               'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_y_gm_on_nrho(n) = register_diag_field ('ocean_model', &
@@ -1373,7 +1373,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
          
          id_flux_x_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
               trim(T_prog(n)%name)//'_xflux_ndiffuse_on_nrho',               &
-              Grd%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
               'ndiffuse_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
               'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_y_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
@@ -1383,7 +1383,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
               'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_x_gm_on_nrho(n) = register_diag_field ('ocean_model', &
               trim(T_prog(n)%name)//'_xflux_gm_on_nrho',               &
-              Grd%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
               'gm_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
               'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
          id_flux_y_gm_on_nrho(n) = register_diag_field ('ocean_model', &
