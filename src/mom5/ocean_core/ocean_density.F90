@@ -240,6 +240,10 @@ module ocean_density_mod
 !  Maximum potential density used to partition vertical according 
 !  to potential density.
 !  </DATA> 
+!  <DATA NAME="potrho_nk" TYPE="integer">
+!  Number of classes used to partition vertical according to potential
+!  density. Used for diagnostics.
+!  </DATA>
 !
 !  <DATA NAME="neutral_density_omega" TYPE="logical">
 !  Set to true to compute the neutral density according to 
@@ -269,6 +273,10 @@ module ocean_density_mod
 !  Maximum neutral density used to partition vertical according 
 !  to rational polynomial approximation to neutral density.  
 !  </DATA> 
+!  <DATA NAME="neutralrho_nk" TYPE="integer">
+!  Number of classes used to partition vertical according to neutral
+!  density. Used for diagnostics.
+!  </DATA>
 !
 !  <DATA NAME="theta_min" UNITS="C" TYPE="real">
 !  Minimum conservative temperature or potential temperature used to 
@@ -278,11 +286,10 @@ module ocean_density_mod
 !  Maximum conservative temperature or potential temperature used to
 !  partition vertical according to temperature. 
 !  </DATA> 
-!
-!  <DATA NAME="layer_nk" TYPE="integer">
-!  Number of classes used to partition vertical according to potential density,
-!  conservative temperature, or potential temperature. Used for diagnostics. 
-!  </DATA> 
+!  <DATA NAME="theta_nk" TYPE="integer">
+!  Number of classes used to partition vertical according to temperature.
+!  Used for diagnostics.
+!  </DATA>
 !
 !  <DATA NAME="buoyfreq_smooth_vert" TYPE="logical">
 !  To smooth the vertical temp and salt derivative for diagnosing 
@@ -645,14 +652,13 @@ real :: mb_neutralrho
 
 ! for diagnostic partitioning of vertical according to 
 ! potential density, neutral density, or theta classes 
-integer :: layer_nk = 80 ! # of classes used to compute diagnostics associated with 
-                         ! potential density, potential temperature, or conservative
-                         ! temperature classes. 
 
 ! for diagnostic partitioning of vertical according to potential density classes 
 real :: potrho_press = 2000.0  ! sea pressure (dbars) for potential density computed for diagnostics
 real :: potrho_min   = 1028.0  ! (kg/m^3)         
 real :: potrho_max   = 1038.0  ! (kg/m^3)           
+integer :: potrho_nk = 80      ! # of classes used to compute diagnostics associated with
+                               ! potential density.
 
 ! for diagnostic partitioning of vertical according to 
 ! rational polynomial approximation to neutral density
@@ -661,11 +667,15 @@ logical :: neutral_density_potrho = .true.
 logical :: neutral_density_theta  = .false.
 real    :: neutralrho_min = 1020.0  ! (kg/m^3)         
 real    :: neutralrho_max = 1030.0  ! (kg/m^3)           
+integer :: neutralrho_nk = 80       ! # of classes used to compute diagnostics associated with
+                                    ! neutral density.
 
 ! for diagnostic partitioning of vertical according 
 ! to potential temperature or conservative temperature classes 
 real :: theta_min = -2.0  ! (degrees C)         
 real :: theta_max = 30.0  ! (degrees C)           
+integer :: theta_nk = 80  ! # of classes used to compute diagnostics associated with
+                          ! temperature.
 
 ! standard atmospheric pressure (dbar).
 ! Should be set to 0.0 if assume zero pressure for the 
@@ -713,9 +723,9 @@ namelist /ocean_density_nml/ s_test, t_test, p_test, press_standard,            
                              sn_test, tn_test,                                        &
                              eos_linear, alpha_linear_eos, beta_linear_eos,           & 
                              eos_preteos10, eos_teos10,                               &
-                             potrho_press, potrho_min, potrho_max,                    &
-                             neutralrho_min, neutralrho_max,                          &
-                             layer_nk, theta_min, theta_max,                          &
+                             potrho_press, potrho_min, potrho_max, potrho_nk          &
+                             neutralrho_min, neutralrho_max, neutralrho_nk            &
+                             theta_min, theta_max, theta_nk                           &
                              debug_this_module, write_a_restart,                      &
                              rho0_density, density_equal_potrho,                      &
                              buoyfreq_smooth_vert, num_121_passes, epsln_drhodz,      &
@@ -1185,7 +1195,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
 
    ! compute some density related diagnostic factors
    ! initialize neutralrho_interval_r first
-   neutralrho_interval  = (neutralrho_max-neutralrho_min)/(epsln+layer_nk)
+   neutralrho_interval  = (neutralrho_max-neutralrho_min)/(epsln+neutralrho_nk)
    neutralrho_interval_r = 1.0/neutralrho_interval
    call compute_diagnostic_factors(Time, Thickness, Dens, salinity, temperature)
 
@@ -1284,50 +1294,50 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
    endif 
 
   ! define vertical axes according to potential density classes  
-  allocate ( Dens%potrho_ref(layer_nk))
-  allocate ( Dens%potrho_bounds(layer_nk+1))
-  allocate ( potrho_bounds(layer_nk+1))
+  allocate ( Dens%potrho_ref(potrho_nk))
+  allocate ( Dens%potrho_bounds(potrho_nk+1))
+  allocate ( potrho_bounds(potrho_nk+1))
   potrho_bounds(1) = potrho_min
-  potrho_interval  = (potrho_max-potrho_min)/(epsln+layer_nk)
-  do k=2,layer_nk+1
+  potrho_interval  = (potrho_max-potrho_min)/(epsln+potrho_nk)
+  do k=2,potrho_nk+1
     potrho_bounds(k)=potrho_bounds(k-1)+potrho_interval
   enddo 
-  do k=1,layer_nk
+  do k=1,potrho_nk
     Dens%potrho_ref(k)=potrho_bounds(k)+0.5*potrho_interval
   enddo 
-  do k=1,layer_nk+1
+  do k=1,potrho_nk+1
     Dens%potrho_bounds(k) = potrho_bounds(k)
   enddo 
 
   ! define vertical axes according to neutral density classes  
-  allocate ( Dens%neutralrho_ref(layer_nk))
-  allocate ( Dens%neutralrho_bounds(layer_nk+1))
-  allocate ( neutralrho_bounds(layer_nk+1))
+  allocate ( Dens%neutralrho_ref(neutralrho_nk))
+  allocate ( Dens%neutralrho_bounds(neutralrho_nk+1))
+  allocate ( neutralrho_bounds(neutralrho_nk+1))
   neutralrho_bounds(1) = neutralrho_min
-  do k=2,layer_nk+1
+  do k=2,neutralrho_nk+1
     neutralrho_bounds(k)=neutralrho_bounds(k-1)+neutralrho_interval
   enddo 
-  do k=1,layer_nk
+  do k=1,neutralrho_nk
     Dens%neutralrho_ref(k)=neutralrho_bounds(k)+0.5*neutralrho_interval
   enddo 
-  do k=1,layer_nk+1
+  do k=1,neutralrho_nk+1
     Dens%neutralrho_bounds(k) = neutralrho_bounds(k)
   enddo 
 
   ! define vertical axes according to 
   ! potential temperature or conservative temperature classes
-  allocate ( Dens%theta_ref(layer_nk))
-  allocate ( Dens%theta_bounds(layer_nk+1))
-  allocate ( theta_bounds(layer_nk+1))
+  allocate ( Dens%theta_ref(theta_nk))
+  allocate ( Dens%theta_bounds(theta_nk+1))
+  allocate ( theta_bounds(theta_nk+1))
   theta_bounds(1)  = theta_min
-  theta_interval   = (theta_max-theta_min)/(epsln+layer_nk)
-  do k=2,layer_nk+1
+  theta_interval   = (theta_max-theta_min)/(epsln+theta_nk)
+  do k=2,theta_nk+1
     theta_bounds(k) =theta_bounds(k-1) +theta_interval
   enddo 
-  do k=1,layer_nk
+  do k=1,theta_nk
     Dens%theta_ref(k) =theta_bounds(k) +0.5*theta_interval
   enddo 
-  do k=1,layer_nk+1
+  do k=1,theta_nk+1
     Dens%theta_bounds(k) = theta_bounds(k)
   enddo 
 
