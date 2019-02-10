@@ -417,6 +417,7 @@ module ocean_types_mod
 
   type , public :: ocean_density_type
      logical                               :: use_teos10           ! for using the TEOS-2010 equation of state recommendations 
+     logical                               :: nrho_face_bin        ! for binning mass/tracer transports using T-cell face neutralrho
      real, dimension(isd:ied,jsd:jed,nk,3) :: rho                  ! in situ density (kg/m^3) at time levels
      real, dimension(isd:ied,jsd:jed,nk,3) :: rho_salinity         ! salinity used in rho calculations (psu or g/kg) at time levels
      real, dimension(isd:ied,jsd:jed,nk)   :: rho_dztr_tau         ! rho_dztr at time tau 1/(kg/m^3) (for diagnostic uses) 
@@ -437,6 +438,8 @@ module ocean_types_mod
      real, dimension(isd:ied,jsd:jed,nk)   :: dSdz_zt              ! partial salinity wrt z  (psu/m) at T-point
      real, dimension(isd:ied,jsd:jed,nk)   :: potrho               ! potential density (kg/m^3)
      real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho           ! neutral density (kg/m^3)
+     real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho_et        ! neutral density (kg/m^3) on T-cell east face
+     real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho_nt        ! neutral density (kg/m^3) on T-cell north face
      real, dimension(isd:ied,jsd:jed,nk)   :: watermass_factor        ! ratio (|grad nrho|/|grad local ref potrho|) / delta(gamma)
      real, dimension(isd:ied,jsd:jed,nk)   :: stratification_factor   ! rho*Area(h) / gamma_{,h}, w/ h=direction w/ max gamma strat
      real, dimension(isd:ied,jsd:jed)      :: mld_subduction          ! depth mixed layer base (m) for subduction diagnostics 
@@ -958,6 +961,7 @@ module ocean_types_mod
 
   type, public ::  ocean_density_type
      logical                                :: use_teos10              ! for using the TEOS-2010 equation of state recommendations 
+     logical                                :: nrho_face_bin           ! for binning mass/tracer transports using T-cell face neutralrho
      real, _ALLOCATABLE, dimension(:,:,:,:) :: rho               _NULL ! in situ density (kg/m^3) at time levels
      real, _ALLOCATABLE, dimension(:,:,:,:) :: rho_salinity      _NULL ! salinity used in density calculations (psu or g/kg) 
      real, _ALLOCATABLE, dimension(:,:,:)   :: rho_dztr_tau      _NULL ! rho_dztr at time tau 1/(kg/m^3) (for diagnostic uses) 
@@ -979,6 +983,8 @@ module ocean_types_mod
      real, _ALLOCATABLE, dimension(:,:,:)   :: dSdz_zt           _NULL ! partial salinity wrt z  (psu/m) at T-point
      real, _ALLOCATABLE, dimension(:,:,:)   :: potrho            _NULL ! potential density (kg/m^3)
      real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho        _NULL ! neutral density (kg/m^3)
+     real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho_et     _NULL ! neutral density (kg/m^3) on T-cell east face
+     real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho_nt     _NULL ! neutral density (kg/m^3) on T-cell north face
      real, _ALLOCATABLE, dimension(:,:,:)   :: watermass_factor      _NULL ! ratio |grad nrho|/|grad local ref potrho|*/delta(gamma)
      real, _ALLOCATABLE, dimension(:,:,:)   :: stratification_factor _NULL ! ratio |grad nrho|/|grad local ref potrho|*/delta(gamma)
      real, _ALLOCATABLE, dimension(:,:)     :: mld_subduction        _NULL ! depth mixed layer base (m) for subduction diagnostics 

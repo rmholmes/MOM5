@@ -241,6 +241,14 @@ module ocean_density_mod
 !  to potential density.
 !  </DATA> 
 !
+!  <DATA NAME="nrho_face_bin" TYPE="logical">
+!  Set to true to use neutral density array averaged onto
+!  T-cell faces for binning the lateral mass/tracer fluxes,
+!  instead of using the neutral density at the adjacent
+!  T-cell center.
+!  Default nrho_face_bin=.false.
+!  </DATA>
+!
 !  <DATA NAME="neutral_density_omega" TYPE="logical">
 !  Set to true to compute the neutral density according to 
 !  the omega method based on Klocker and McDougall. 
@@ -411,7 +419,7 @@ use time_manager_mod,    only: time_type, increment_time
 use field_manager_mod,   only: fm_get_index
 
 use ocean_domains_mod,    only: get_local_indices
-use ocean_operators_mod,  only: FDX_T, FDY_T, FMX, FMY, S2D 
+use ocean_operators_mod,  only: FDX_T, FDY_T, FMX, FMY, S2D, FAX, FAY
 use ocean_parameters_mod, only: GEOPOTENTIAL, ZSTAR, ZSIGMA, PRESSURE, PSTAR, PSIGMA 
 use ocean_parameters_mod, only: CONSERVATIVE_TEMP, POTENTIAL_TEMP, PRACTICAL_SALT, PREFORMED_SALT
 use ocean_parameters_mod, only: missing_value, onefourth, onehalf, rho0r, rho0, grav
@@ -656,6 +664,7 @@ real :: potrho_max   = 1038.0  ! (kg/m^3)
 
 ! for diagnostic partitioning of vertical according to 
 ! rational polynomial approximation to neutral density
+logical :: nrho_face_bin          = .false.
 logical :: neutral_density_omega  = .false.
 logical :: neutral_density_potrho = .true.
 logical :: neutral_density_theta  = .false.
@@ -713,6 +722,7 @@ namelist /ocean_density_nml/ s_test, t_test, p_test, press_standard,            
                              sn_test, tn_test,                                        &
                              eos_linear, alpha_linear_eos, beta_linear_eos,           & 
                              eos_preteos10, eos_teos10,                               &
+                             nrho_face_bin,                                           &
                              potrho_press, potrho_min, potrho_max,                    &
                              neutralrho_min, neutralrho_max,                          &
                              layer_nk, theta_min, theta_max,                          &
@@ -925,6 +935,12 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
         '==>Warning: rho0_density=.true, so rho=rho0 everywhere. Is this really what you wish to do?'
     endif
 
+    if(nrho_face_bin) then
+        write (stdoutunit,'(/1x,a)') &
+        ' ==> Note: Computing nrho binning of mass/tracer fluxes using T-cell face averaged neutral density.'
+    endif
+    Dens%nrho_face_bin = nrho_face_bin
+
     if(neutral_density_omega) then 
         write (stdoutunit,'(/1x,a)') &
         ' ==> Note: Computing diagnostic neutral_rho according to Klocker/McDougall (not yet coded).'
@@ -973,6 +989,8 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
     allocate(Dens%rho_dztr_tau(isd:ied,jsd:jed,nk))
     allocate(Dens%potrho(isd:ied,jsd:jed,nk))
     allocate(Dens%neutralrho(isd:ied,jsd:jed,nk))
+    allocate(Dens%neutralrho_et(isd:ied,jsd:jed,nk))
+    allocate(Dens%neutralrho_nt(isd:ied,jsd:jed,nk))
     allocate(Dens%pressure_at_depth(isd:ied,jsd:jed,nk))
     allocate(Dens%drhodT(isd:ied,jsd:jed,nk))
     allocate(Dens%dpotrhodT(isd:ied,jsd:jed,nk))
@@ -998,6 +1016,8 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
        Dens%rho_fresh(:,:,k)         = 1000.0*Grid%tmask(:,:,k)
        Dens%potrho(:,:,k)            = rho0*Grid%tmask(:,:,k)
        Dens%neutralrho(:,:,k)        = rho0*Grid%tmask(:,:,k)
+       Dens%neutralrho_et(:,:,k)     = rho0*Grid%tmask(:,:,k)
+       Dens%neutralrho_nt(:,:,k)     = rho0*Grid%tmask(:,:,k)
        Dens%pressure_at_depth(:,:,k) = rho0*grav*Thickness%depth_zt(:,:,k)*c2dbars
     enddo
     Dens%rho(:,:,:,1)            = Grid%tmask(:,:,:)*rho0 
@@ -1183,6 +1203,14 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
      T_diag(ind_neutralrho)%field(:,:,:) = Dens%neutralrho(:,:,:)
    endif
 
+   ! Compute neutral density on East and North T-cell faces:
+   if (Dens%nrho_face_bin) then
+     do k=1,nk
+        Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+        Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+     enddo
+   end if
+   
    ! compute some density related diagnostic factors
    ! initialize neutralrho_interval_r first
    neutralrho_interval  = (neutralrho_max-neutralrho_min)/(epsln+layer_nk)
@@ -2010,7 +2038,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   type(ocean_density_type),       intent(inout) :: Dens
   type(ocean_diag_tracer_type),   intent(inout) :: T_diag(:)
   
-  integer :: tau
+  integer :: tau, k
 
   tau   = Time%tau
 
@@ -2024,6 +2052,14 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   if (ind_neutralrho .gt. 0) then
     T_diag(ind_neutralrho)%field(:,:,:) = Dens%neutralrho(:,:,:)
   endif
+
+  ! Compute neutral density on East and North T-cell faces
+  if (Dens%nrho_face_bin) then
+    do k=1,nk
+       Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
+       Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
+    enddo
+  end if
 
   ! compute potential density for diagnostic purposes 
   Dens%potrho(:,:,:) = Grd%tmask(:,:,:) &

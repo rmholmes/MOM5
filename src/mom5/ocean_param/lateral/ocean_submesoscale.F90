@@ -332,6 +332,8 @@ integer :: id_tform_salt_subdiff_on_nrho =-1
 
 integer, dimension(:), allocatable :: id_xflux_submeso       ! i-directed flux 
 integer, dimension(:), allocatable :: id_yflux_submeso       ! j-directed flux 
+integer, dimension(:), allocatable :: id_xflux_submeso_on_nrho ! i-directed flux on neutral density
+integer, dimension(:), allocatable :: id_yflux_submeso_on_nrho ! j-directed flux on neutral density
 integer, dimension(:), allocatable :: id_zflux_submeso       ! k-directed flux 
 integer, dimension(:), allocatable :: id_xflux_submeso_int_z ! vertically integrated i-flux
 integer, dimension(:), allocatable :: id_yflux_submeso_int_z ! vertically integrated j-flux
@@ -1017,6 +1019,8 @@ contains
 
     allocate (id_xflux_submeso(num_prog_tracers))
     allocate (id_yflux_submeso(num_prog_tracers))
+    allocate (id_xflux_submeso_on_nrho(num_prog_tracers))
+    allocate (id_yflux_submeso_on_nrho(num_prog_tracers))
     allocate (id_zflux_submeso(num_prog_tracers))
     allocate (id_xflux_submeso_int_z(num_prog_tracers))
     allocate (id_yflux_submeso_int_z(num_prog_tracers))
@@ -1043,6 +1047,16 @@ contains
                 Grd%tracer_axes_flux_y(1:3), Time%model_time,        &
                 'cp*submeso_yflux*dxt*rho_dzt*temp',                 &
                 'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+           id_xflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_xflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_x(1:3), Time%model_time,        &
+                'cp*submeso_xflux*dyt*rho_dzt*temp binned to neutral density',&
+                'Watt', missing_value=missing_value, range=(/-1.e20,1.e20/))
+           id_yflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_yflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_y(1:3), Time%model_time,        &
+                'cp*submeso_yflux*dxt*rho_dzt*temp binned to neutral density',&
+                'Watt', missing_value=missing_value, range=(/-1.e20,1.e20/))
            id_zflux_submeso(n) = register_diag_field ('ocean_model', &
                 trim(T_prog(n)%name)//'_zflux_submeso',              &
                 Grd%tracer_axes_wt(1:3), Time%model_time,            &
@@ -1112,6 +1126,16 @@ contains
                 'submeso_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name), &
                 'kg/sec', missing_value=missing_value,                        &
                 range=(/-1.e18,1.e18/))
+           id_xflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_xflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_x(1:3), Time%model_time,        &
+                'submeso_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+                'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
+           id_yflux_submeso_on_nrho(n) = register_diag_field ('ocean_model', &
+                trim(T_prog(n)%name)//'_yflux_submeso_on_nrho',              &
+                Dens%neutralrho_axes_flux_y(1:3), Time%model_time,        &
+                'submeso_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+                'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
            id_zflux_submeso(n) = register_diag_field ('ocean_model',          &
                 trim(T_prog(n)%name)//'_zflux_submeso',                       &
                 Grd%tracer_axes_wt(1:3), Time%model_time,                     &
@@ -2359,8 +2383,8 @@ subroutine compute_submeso_skewsion(Thickness, Dens, Time, T_prog)
   
   do n=1,num_prog_tracers
 
-     call compute_flux_x(Time,n,T_prog(n))
-     call compute_flux_y(Time,n,T_prog(n))
+     call compute_flux_x(Time,n,T_prog(n),Dens)
+     call compute_flux_y(Time,n,T_prog(n),Dens)
      call compute_flux_z(Time,n,T_prog(n))
 
      if (Grd%tripolar) then 
@@ -2460,11 +2484,12 @@ end subroutine compute_submeso_skewsion
 !
 ! </DESCRIPTION>
 !
-subroutine compute_flux_x(Time,n,Tracer)
+subroutine compute_flux_x(Time,n,Tracer,Dens)
 
   type(ocean_time_type),        intent(in) :: Time
   integer,                      intent(in) :: n
   type(ocean_prog_tracer_type), intent(in) :: Tracer
+  type(ocean_density_type),     intent(in)    :: Dens
 
   integer :: i, j, k
   integer :: ip, kr
@@ -2521,6 +2546,9 @@ subroutine compute_flux_x(Time,n,Tracer)
   if(id_xflux_submeso(n) > 0) then 
      call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*Tracer%conversion*flux_x(:,:,:))
   endif
+  if(id_xflux_submeso_on_nrho(n) > 0) then 
+     call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*Tracer%conversion*flux_x, 1)
+  endif
 
   if(id_xflux_submeso_int_z(n) > 0) then 
       wrk1_2d = 0.0
@@ -2574,11 +2602,12 @@ end subroutine compute_flux_x
 !
 ! </DESCRIPTION>
 !
-subroutine compute_flux_y(Time,n,Tracer)
+subroutine compute_flux_y(Time,n,Tracer,Dens)
 
   type(ocean_time_type),        intent(in) :: Time
   integer,                      intent(in) :: n
   type(ocean_prog_tracer_type), intent(in) :: Tracer
+  type(ocean_density_type),     intent(in)    :: Dens
 
   integer :: i, j, k
   integer :: jq, kr
@@ -2634,6 +2663,9 @@ subroutine compute_flux_y(Time,n,Tracer)
   ! diagnostics 
   if(id_yflux_submeso(n) > 0) then 
      call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*Tracer%conversion*flux_y(:,:,:))
+  endif
+  if(id_yflux_submeso_on_nrho(n) > 0) then 
+     call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*Tracer%conversion*flux_y, 2)
   endif
 
   if(id_yflux_submeso_int_z(n) > 0) then 
@@ -2931,6 +2963,9 @@ subroutine compute_submeso_upwind(Time, Dens, T_prog)
      if(id_xflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_x(:,:,:))
      endif
+     if(id_xflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_x, 1)
+     endif
      if(id_xflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
          do k=1,nk
@@ -2945,6 +2980,9 @@ subroutine compute_submeso_upwind(Time, Dens, T_prog)
 
      if(id_yflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_y(:,:,:))
+     endif
+     if(id_yflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_y, 2)
      endif
      if(id_yflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
@@ -3246,6 +3284,9 @@ subroutine compute_submeso_sweby(Thickness, Time, Dens, T_prog)
      if(id_xflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_xflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_x(:,:,:))
      endif
+     if(id_xflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_xflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_x, 1)
+     endif
      if(id_xflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
          do k=1,nk
@@ -3260,6 +3301,9 @@ subroutine compute_submeso_sweby(Thickness, Time, Dens, T_prog)
 
      if(id_yflux_submeso(n) > 0) then 
         call diagnose_3d(Time, Grd, id_yflux_submeso(n), flux_sign*T_prog(n)%conversion*flux_y(:,:,:))
+     endif
+     if(id_yflux_submeso_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_yflux_submeso_on_nrho(n), flux_sign*T_prog(n)%conversion*flux_y, 2)
      endif
      if(id_yflux_submeso_int_z(n) > 0) then 
          wrk1_2d = 0.0
@@ -3631,16 +3675,35 @@ subroutine transport_on_nrho_submeso (Time, Dens, tx_trans_lev, ty_trans_lev)
          do k=1,nk-1
             do j=jsc,jec
                do i=isc,iec
-                  if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho(i,j,k)  ) then
-                      if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho(i,j,k+1)) then 
-                          W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho(i,j,k)
-                          W2= Dens%neutralrho(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
-                          work(i,j,k_rho,1) = (tx_trans_lev(i,j,k+1)*W1 +tx_trans_lev(i,j,k)*W2) &
-                                              /(W1 + W2 + epsln)
-                          work(i,j,k_rho,2) = (ty_trans_lev(i,j,k+1)*W1 +ty_trans_lev(i,j,k)*W2) &
-                                              /(W1 + W2 + epsln)
-                      endif
-                  endif
+                  if (Dens%nrho_face_bin) then ! Do binning with ET and NT neutralrho arrays
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho_et(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho_et(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho_et(i,j,k)
+                            W2= Dens%neutralrho_et(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,1) = (tx_trans_lev(i,j,k+1)*W1 +tx_trans_lev(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho_nt(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho_nt(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho_nt(i,j,k)
+                            W2= Dens%neutralrho_nt(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,2) = (ty_trans_lev(i,j,k+1)*W1 +ty_trans_lev(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                  else ! Do binning with T-cell center neutralrho array
+                    if(     Dens%neutralrho_ref(k_rho) >  Dens%neutralrho(i,j,k)  ) then
+                        if( Dens%neutralrho_ref(k_rho) <= Dens%neutralrho(i,j,k+1)) then
+                            W1= Dens%neutralrho_ref(k_rho)- Dens%neutralrho(i,j,k)
+                            W2= Dens%neutralrho(i,j,k+1)  - Dens%neutralrho_ref(k_rho)
+                            work(i,j,k_rho,1) = (tx_trans_lev(i,j,k+1)*W1 +tx_trans_lev(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                            work(i,j,k_rho,2) = (ty_trans_lev(i,j,k+1)*W1 +ty_trans_lev(i,j,k)*W2) &
+                                                /(W1 + W2 + epsln)
+                        endif
+                    endif
+                 endif
                enddo
             enddo
          enddo

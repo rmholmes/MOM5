@@ -387,6 +387,8 @@ integer, dimension(:), allocatable :: id_advection_y
 integer, dimension(:), allocatable :: id_advection_z
 integer, dimension(:), allocatable :: id_xflux_adv
 integer, dimension(:), allocatable :: id_yflux_adv
+integer, dimension(:), allocatable :: id_xflux_adv_on_nrho
+integer, dimension(:), allocatable :: id_yflux_adv_on_nrho
 integer, dimension(:), allocatable :: id_zflux_adv
 integer, dimension(:), allocatable :: id_xflux_adv_int_z
 integer, dimension(:), allocatable :: id_yflux_adv_int_z
@@ -787,6 +789,8 @@ subroutine advection_diag_init (Time, Dens, T_prog)
   allocate (id_advection_z(num_prog_tracers))
   allocate (id_xflux_adv(num_prog_tracers))
   allocate (id_yflux_adv(num_prog_tracers))
+  allocate (id_xflux_adv_on_nrho(num_prog_tracers))
+  allocate (id_yflux_adv_on_nrho(num_prog_tracers))
   allocate (id_zflux_adv(num_prog_tracers))
   allocate (id_xflux_adv_int_z(num_prog_tracers))
   allocate (id_yflux_adv_int_z(num_prog_tracers))
@@ -804,6 +808,8 @@ subroutine advection_diag_init (Time, Dens, T_prog)
   id_advection_z      =-1
   id_xflux_adv        =-1
   id_yflux_adv        =-1
+  id_xflux_adv_on_nrho=-1
+  id_yflux_adv_on_nrho=-1
   id_zflux_adv        =-1
   id_xflux_adv_int_z  =-1
   id_yflux_adv_int_z  =-1
@@ -847,6 +853,12 @@ subroutine advection_diag_init (Time, Dens, T_prog)
       id_yflux_adv(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_yflux_adv', &
                    Grd%tracer_axes_flux_y(1:3), Time%model_time, 'cp*rho*dzt*dxt*v*temp',        &
                    'Watts', missing_value=missing_value, range=(/-1.e18,1.e18/))
+      id_xflux_adv_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_xflux_adv_on_nrho', &
+                   Dens%neutralrho_axes_flux_x(1:3), Time%model_time, 'cp*rho*dzt*dyt*u*temp binned to neutral density',&
+                   'Watts', missing_value=missing_value, range=(/-1.e20,1.e20/))
+      id_yflux_adv_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_yflux_adv_on_nrho', &
+                   Dens%neutralrho_axes_flux_y(1:3), Time%model_time, 'cp*rho*dzt*dxt*v*temp binned to neutral density',&
+                   'Watts', missing_value=missing_value, range=(/-1.e20,1.e20/))
       id_zflux_adv(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_zflux_adv', &
                    Grd%tracer_axes_wt(1:3), Time%model_time, 'cp*rho*dxt*dyt*wt*temp',           &
                    'Watts', missing_value=missing_value, range=(/-1.e18,1.e18/))      
@@ -905,6 +917,12 @@ subroutine advection_diag_init (Time, Dens, T_prog)
       id_yflux_adv(n)   = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_yflux_adv', &
                    Grd%tracer_axes_flux_y(1:3), Time%model_time, 'rho*dzt*dxt*v*tracer',           &
                    'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
+      id_xflux_adv_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_xflux_adv_on_nrho', &
+                   Dens%neutralrho_axes_flux_x(1:3), Time%model_time, 'rho*dzt*dyt*u*tracer binned to neutral density',&
+                   'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
+      id_yflux_adv_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_yflux_adv_on_nrho', &
+                   Dens%neutralrho_axes_flux_y(1:3), Time%model_time, 'rho*dzt*dxt*v*tracer binned to neutral density',&
+                   'kg/sec', missing_value=missing_value, range=(/-1.e20,1.e20/))
       id_zflux_adv(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_zflux_adv', &
                    Grd%tracer_axes_wt(1:3), Time%model_time, 'rho*dxt*dyt*wt*tracer',            &
                    'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))            
@@ -2041,7 +2059,13 @@ subroutine horz_advect_tracer(Time, Adv_vel, Thickness, Dens, T_prog, Tracer, nt
       endif 
       if (id_yflux_adv(ntracer) > 0) then 
          call diagnose_3d(Time, Grd, id_yflux_adv(ntracer), Tracer%conversion*flux_y(:,:,:))
-      endif 
+      endif
+      if (id_xflux_adv_on_nrho(ntracer) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(ntracer), Tracer%conversion*flux_x, 1)
+      endif
+      if (id_yflux_adv_on_nrho(ntracer) > 0) then
+         call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(ntracer), Tracer%conversion*flux_y, 2)
+      endif
 
       if (id_xflux_adv_int_z(ntracer) > 0) then 
           tmp_flux(:,:) = 0.0
@@ -4311,6 +4335,9 @@ subroutine advect_tracer_sweby_all(Time, Adv_vel, Dens, T_prog, Thickness, dtime
 
      call mpp_clock_begin(id_clock_mdfl_sweby_dia)
      if (id_xflux_adv(n) > 0) call diagnose_3d(Time, Grd, id_xflux_adv(n), T_prog(n)%conversion*flux_x(:,:,:))
+     if (id_xflux_adv_on_nrho(n) > 0) then
+        call diagnose_3d_rho(Time, Dens, id_xflux_adv_on_nrho(n), T_prog(n)%conversion*flux_x, 1)
+     endif
 
      if (id_advection_x(n) > 0) call diagnose_3d(Time, Grd, id_advection_x(n), T_prog(n)%conversion*wrk1(:,:,:))
 
@@ -4442,6 +4469,9 @@ subroutine advect_tracer_sweby_all(Time, Adv_vel, Dens, T_prog, Thickness, dtime
 
      if (id_yflux_adv(n) > 0) call diagnose_3d(Time, Grd, id_yflux_adv(n), &
                       T_prog(n)%conversion*flux_y(:,:,:))
+     if (id_yflux_adv_on_nrho(n) > 0) then
+        call diagnose_3d_rho(Time, Dens, id_yflux_adv_on_nrho(n), T_prog(n)%conversion*flux_y, 2)
+     endif
 
      if (id_advection_y(n) > 0) call diagnose_3d(Time, Grd, id_advection_y(n), &
                       T_prog(n)%conversion*wrk1(:,:,:))

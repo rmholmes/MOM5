@@ -391,6 +391,10 @@ integer, dimension(:), allocatable  :: id_flux_x_ndiffuse_int_z ! vertically int
 integer, dimension(:), allocatable  :: id_flux_y_ndiffuse_int_z ! vertically integrated j-directed diffuse flux 
 integer, dimension(:), allocatable  :: id_flux_x_gm_int_z       ! vertically integrated i-directed GM flux 
 integer, dimension(:), allocatable  :: id_flux_y_gm_int_z       ! vertically integrated j-directed GM flux 
+integer, dimension(:), allocatable  :: id_flux_x_ndiffuse_on_nrho  ! i-directed tracer flux from neutral diffuse on neutral density
+integer, dimension(:), allocatable  :: id_flux_y_ndiffuse_on_nrho  ! j-directed tracer flux from neutral diffuse on neutral density 
+integer, dimension(:), allocatable  :: id_flux_x_gm_on_nrho        ! i-directed tracer flux from GM on neutral density
+integer, dimension(:), allocatable  :: id_flux_y_gm_on_nrho        ! j-directed tracer flux from GM on neutral density
 
 integer, dimension(:), allocatable  :: id_bc_mode  ! baroclinic modes
 integer, dimension(:), allocatable  :: id_bc_speed ! baroclinic wave speeds 
@@ -1211,6 +1215,10 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
   allocate (id_flux_y_ndiffuse_int_z(num_prog_tracers))
   allocate (id_flux_x_gm_int_z(num_prog_tracers))
   allocate (id_flux_y_gm_int_z(num_prog_tracers))
+  allocate (id_flux_x_ndiffuse_on_nrho(num_prog_tracers))
+  allocate (id_flux_y_ndiffuse_on_nrho(num_prog_tracers))
+  allocate (id_flux_x_gm_on_nrho(num_prog_tracers))
+  allocate (id_flux_y_gm_on_nrho(num_prog_tracers))
   id_flux_x_ndiffuse       = -1
   id_flux_y_ndiffuse       = -1
   id_flux_z_ndiffuse       = -1
@@ -1221,6 +1229,10 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
   id_flux_y_ndiffuse_int_z = -1
   id_flux_x_gm_int_z       = -1
   id_flux_y_gm_int_z       = -1
+  id_flux_x_ndiffuse_on_nrho = -1
+  id_flux_y_ndiffuse_on_nrho = -1
+  id_flux_x_gm_on_nrho       = -1
+  id_flux_y_gm_on_nrho       = -1
 
   do n=1,num_prog_tracers
      if(n == index_temp) then 
@@ -1275,7 +1287,28 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
               Grd%tracer_axes_flux_y(1:2), Time%model_time,          &
               'z-integral cp*gm_yflux*dyt*rho_dzt*temp',             &
               'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
-     else
+
+         id_flux_x_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_xflux_ndiffuse_on_nrho',               &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              'cp*ndiffuse_xflux*dyt*rho_dzt*temp binned to neutral density',&
+              'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_y_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_yflux_ndiffuse_on_nrho',               &
+              Dens%neutralrho_axes_flux_y(1:3), Time%model_time,          &
+              'cp*ndiffuse_yflux*dxt*rho_dzt*temp binned to neutral density',&
+              'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_x_gm_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_xflux_gm_on_nrho',               &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              'cp*gm_xflux*dyt*rho_dzt*temp binned to neutral density',&
+              'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_y_gm_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_yflux_gm_on_nrho',               &
+              Dens%neutralrho_axes_flux_y(1:3), Time%model_time,          &
+              'cp*gm_yflux*dxt*rho_dzt*temp binned to neutral density',&
+              'Watt', missing_value=missing_value, range=(/-1.e18,1.e18/))
+      else
          id_flux_x_ndiffuse(n) = register_diag_field ('ocean_model',         &
               trim(T_prog(n)%name)//'_xflux_ndiffuse',                       &
               Grd%tracer_axes_flux_x(1:3), Time%model_time,                  &
@@ -1337,6 +1370,27 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
               'z-integral gm_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name), &
               'kg/sec', missing_value=missing_value,                              &
               range=(/-1.e18,1.e18/))
+         
+         id_flux_x_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_xflux_ndiffuse_on_nrho',               &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              'ndiffuse_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+              'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_y_ndiffuse_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_yflux_ndiffuse_on_nrho',               &
+              Dens%neutralrho_axes_flux_y(1:3), Time%model_time,          &
+              'ndiffuse_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+              'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_x_gm_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_xflux_gm_on_nrho',               &
+              Dens%neutralrho_axes_flux_x(1:3), Time%model_time,          &
+              'gm_xflux*dyt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+              'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
+         id_flux_y_gm_on_nrho(n) = register_diag_field ('ocean_model', &
+              trim(T_prog(n)%name)//'_yflux_gm_on_nrho',               &
+              Dens%neutralrho_axes_flux_y(1:3), Time%model_time,          &
+              'gm_yflux*dxt*rho_dzt*tracer for'//trim(T_prog(n)%name)//' binned to neutral density',&
+              'kg/sec', missing_value=missing_value, range=(/-1.e18,1.e18/))
 
      endif
 
@@ -1922,7 +1976,14 @@ subroutine compute_ndiffusion(Time, Thickness, Dens, T_prog)
         enddo
         call diagnose_2d(Time, Grd, id_flux_y_ndiffuse_int_z(n), -1.0*T_prog(n)%conversion*tmp_flux(:,:))
      endif
-     
+
+     if(id_flux_x_ndiffuse_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_flux_x_ndiffuse_on_nrho(n), -1.0*T_prog(n)%conversion*flux_x(n)%field,1)
+     endif
+     if(id_flux_y_ndiffuse_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_flux_y_ndiffuse_on_nrho(n), -1.0*T_prog(n)%conversion*flux_y(n)%field,2)
+     endif
+
   enddo   ! n=1,num_prog_tracers
 
   call watermass_diag_ndiffuse(Time, Dens, T_prog(index_temp)%wrk1(:,:,:), T_prog(index_salt)%wrk1(:,:,:))
@@ -2070,6 +2131,13 @@ subroutine compute_gmskewsion(Time, Thickness, Dens, T_prog)
         enddo  
         call diagnose_2d(Time, Grd, id_flux_y_gm_int_z(n), -1.0*T_prog(n)%conversion*tmp_flux(:,:))  
      endif     
+
+     if(id_flux_x_gm_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_flux_x_gm_on_nrho(n), -1.0*T_prog(n)%conversion*flux_x(n)%field,1)
+     endif
+     if(id_flux_y_gm_on_nrho(n) > 0) then 
+        call diagnose_3d_rho(Time, Dens, id_flux_y_gm_on_nrho(n), -1.0*T_prog(n)%conversion*flux_y(n)%field,2)
+     endif
 
   enddo   ! n=1,num_prog_tracers
 
