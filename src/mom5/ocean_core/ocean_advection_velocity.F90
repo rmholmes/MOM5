@@ -161,6 +161,7 @@ integer :: horz_grid
 
 ! for diagnostics 
 integer :: id_wt               =-1
+integer :: id_wt_sq            =-1
 integer :: id_wrho_bt          =-1
 integer :: id_uhrho_et         =-1
 integer :: id_vhrho_nt         =-1
@@ -482,6 +483,8 @@ subroutine ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickne
 
   id_wt = register_diag_field ('ocean_model', 'wt', Grd%vel_axes_wt(1:3), Time%model_time, &
     'dia-surface velocity T-points', 'm/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))
+  id_wt_sq = register_diag_field ('ocean_model', 'wt_sq', Grd%vel_axes_wt(1:3), Time%model_time, &
+    'dia-surface velocity T-points squared', 'm^2/sec^2', missing_value=missing_value, range=(/-10.e4,10.e4/))
 
   id_wrho_bt = register_diag_field ('ocean_model', 'wrhot', Grd%vel_axes_wt(1:3), Time%model_time, &
     'rho*dia-surface velocity T-points', '(kg/m^3)*m/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))
@@ -715,9 +718,14 @@ subroutine ocean_advection_velocity (Velocity, Time, Thickness, Dens, pme, river
 
   ! send advective velocity components to diagnostic manager 
 
-  if (id_wt > 0)  then
+  if (id_wt > 0 .or. id_wt_sq > 0)  then
       if(vert_coordinate_class==DEPTH_BASED) then 
-         call diagnose_3d(Time, Grd, id_wt, rho0r*Adv_vel%wrho_bt(:,:,1:nk))
+         if (id_wt > 0) then
+            call diagnose_3d(Time, Grd, id_wt, rho0r*Adv_vel%wrho_bt(:,:,1:nk))
+         endif
+         if (id_wt_sq > 0) then
+            call diagnose_3d(Time, Grd, id_wt_sq, (rho0r*Adv_vel%wrho_bt(:,:,1:nk))**2)
+         endif
       else 
           wrk1(:,:,:) = 0.0
           do k=1,nk
@@ -729,7 +737,12 @@ subroutine ocean_advection_velocity (Velocity, Time, Thickness, Dens, pme, river
                 enddo
              enddo
           enddo
-          call diagnose_3d(Time, Grd, id_wt, wrk1(:,:,:))
+          if (id_wt > 0) then
+             call diagnose_3d(Time, Grd, id_wt, wrk1(:,:,:))
+          endif
+          if (id_wt_sq > 0) then
+             call diagnose_3d(Time, Grd, id_wt_sq, wrk1(:,:,:)*wrk1(:,:,:))
+          endif
       endif
   endif
 
