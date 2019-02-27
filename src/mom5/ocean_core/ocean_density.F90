@@ -1342,16 +1342,21 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   allocate ( Dens%neutralrho_ref(layer_nk))
   allocate ( Dens%neutralrho_bounds(layer_nk+1))
   allocate ( neutralrho_bounds(layer_nk+1))
-  neutralrho_bounds(1) = neutralrho_min
-  do k=2,layer_nk+1
-    neutralrho_bounds(k)=neutralrho_bounds(k-1)+neutralrho_interval
-  enddo 
-  do k=1,layer_nk
-    Dens%neutralrho_ref(k)=neutralrho_bounds(k)+0.5*neutralrho_interval
-  enddo 
-  do k=1,layer_nk+1
-    Dens%neutralrho_bounds(k) = neutralrho_bounds(k)
-  enddo 
+
+  if (not read from file) then
+     neutralrho_bounds(1) = neutralrho_min
+     do k=2,layer_nk+1
+       neutralrho_bounds(k)=neutralrho_bounds(k-1)+neutralrho_interval
+     enddo 
+     do k=1,layer_nk
+       Dens%neutralrho_ref(k)=neutralrho_bounds(k)+0.5*neutralrho_interval
+     enddo 
+     do k=1,layer_nk+1
+       Dens%neutralrho_bounds(k) = neutralrho_bounds(k)
+     enddo
+  else
+     % read neutralrho_bounds from file (how do we do this, from field_table?????)
+  end if
 
   ! define vertical axes according to 
   ! potential temperature or conservative temperature classes
@@ -1369,6 +1374,9 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   do k=1,layer_nk+1
     Dens%theta_bounds(k) = theta_bounds(k)
   enddo 
+
+  ! define vertical axes according to 
+  ! salinity (copy code as above)
 
   ! assuming that if the Grd%name = 'ocean' then we will
   ! be using this diagnostic axis. Otherwise it is not used.

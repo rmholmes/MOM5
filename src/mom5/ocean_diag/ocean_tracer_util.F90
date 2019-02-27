@@ -883,7 +883,7 @@ end subroutine rebin_onto_rho
 ! Helper function for diagnosting 3D data mapped onto density levels.
 ! </DESCRIPTION>
 !
-subroutine diagnose_3d_rho(Time, Dens, id_name, data, gridin)
+subroutine diagnose_3d_rho(Time, Dens, id_name, data, gridin, tracer)
   type(ocean_time_type), intent(in) :: Time
   type(ocean_density_type), intent(in) :: Dens
   integer, intent(in) :: id_name
@@ -905,16 +905,27 @@ subroutine diagnose_3d_rho(Time, Dens, id_name, data, gridin)
   else
      grid=0
   endif
+
+  if (tracer == 'salt') then
+     dummy_tracer = salt
+     dummy_bounds = Dens%salt_bounds
+  elseif (tracer == 'temp')
+     dummy_tracer = temp
+     dummy_bounds = Dens%theta_bounds
+  else
+     dummy_tracer = Dens%neutralrho
+     dummy_bounds = Dens%neutralrho_bounds
+  end   
   
   if (id_name > 0) then
      neutralrho_nk = size(Dens%neutralrho_ref(:))
      nrho_work(:,:,:) = 0.0
      if (grid.eq.1) then
-       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho_et, data, nrho_work)
+       call rebin_onto_rho(dummy_bounds, dummy_tracer_et, data, nrho_work)
      else if (grid.eq.2) then
-       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho_nt, data, nrho_work)
+       call rebin_onto_rho(dummy_bounds, dummy_tracer_nt, data, nrho_work)
      else
-       call rebin_onto_rho(Dens%neutralrho_bounds, Dens%neutralrho, data, nrho_work)
+       call rebin_onto_rho(dummy_bounds, dummy_tracer, data, nrho_work)
      endif
      used = send_data (id_name, nrho_work(:,:,:), &
           Time%model_time,                        &
