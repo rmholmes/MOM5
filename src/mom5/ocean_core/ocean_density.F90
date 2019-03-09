@@ -1000,6 +1000,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
     allocate(Dens%rho_dztr_tau(isd:ied,jsd:jed,nk))
     allocate(Dens%potrho(isd:ied,jsd:jed,nk))
     allocate(Dens%neutralrho(isd:ied,jsd:jed,nk))
+    allocate(Dens%neutralrho_u(isd:ied,jsd:jed,nk))
     allocate(Dens%neutralrho_et(isd:ied,jsd:jed,nk))
     allocate(Dens%neutralrho_nt(isd:ied,jsd:jed,nk))
     allocate(Dens%pressure_at_depth(isd:ied,jsd:jed,nk))
@@ -1027,6 +1028,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
        Dens%rho_fresh(:,:,k)         = 1000.0*Grid%tmask(:,:,k)
        Dens%potrho(:,:,k)            = rho0*Grid%tmask(:,:,k)
        Dens%neutralrho(:,:,k)        = rho0*Grid%tmask(:,:,k)
+       Dens%neutralrho_u(:,:,k)      = rho0*Grid%tmask(:,:,k)
        Dens%neutralrho_et(:,:,k)     = rho0*Grid%tmask(:,:,k)
        Dens%neutralrho_nt(:,:,k)     = rho0*Grid%tmask(:,:,k)
        Dens%pressure_at_depth(:,:,k) = rho0*grav*Thickness%depth_zt(:,:,k)*c2dbars
@@ -1214,9 +1216,10 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
      T_diag(ind_neutralrho)%field(:,:,:) = Dens%neutralrho(:,:,:)
    endif
 
-   ! Compute neutral density on East and North T-cell faces:
+   ! Compute neutral density on East and North T-cell faces, and on U-points:
    if (Dens%nrho_face_bin) then
      do k=1,nk
+        Dens%neutralrho_u(:,:,k)  = FAY(FAX(Dens%neutralrho(:,:,k)))
         Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
         Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
      enddo
@@ -1415,6 +1418,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
     Dens%neutralrho_axes        = (/ id_grid_xt, id_grid_yt, id_neutralrho_axis /)
     Dens%neutralrho_axes_flux_x = (/ id_grid_xu, id_grid_yt, id_neutralrho_axis /)
     Dens%neutralrho_axes_flux_y = (/ id_grid_xt, id_grid_yu, id_neutralrho_axis /)
+    Dens%neutralrho_axes_u      = (/ id_grid_xu, id_grid_yu, id_neutralrho_axis /)
 
 
     id_theta_bounds = diag_axis_init                                                       &
@@ -2071,6 +2075,7 @@ ierr = check_nml_error(io_status,'ocean_density_nml')
   ! Compute neutral density on East and North T-cell faces
   if (Dens%nrho_face_bin) then
     do k=1,nk
+       Dens%neutralrho_u(:,:,k)  = FAY(FAX(Dens%neutralrho(:,:,k)))
        Dens%neutralrho_et(:,:,k) = FAX(Dens%neutralrho(:,:,k))
        Dens%neutralrho_nt(:,:,k) = FAY(Dens%neutralrho(:,:,k))
     enddo

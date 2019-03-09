@@ -438,6 +438,7 @@ module ocean_types_mod
      real, dimension(isd:ied,jsd:jed,nk)   :: dSdz_zt              ! partial salinity wrt z  (psu/m) at T-point
      real, dimension(isd:ied,jsd:jed,nk)   :: potrho               ! potential density (kg/m^3)
      real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho           ! neutral density (kg/m^3)
+     real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho_u        ! neutral density (kg/m^3) on U-points
      real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho_et        ! neutral density (kg/m^3) on T-cell east face
      real, dimension(isd:ied,jsd:jed,nk)   :: neutralrho_nt        ! neutral density (kg/m^3) on T-cell north face
      real, dimension(isd:ied,jsd:jed,nk)   :: watermass_factor        ! ratio (|grad nrho|/|grad local ref potrho|) / delta(gamma)
@@ -983,6 +984,7 @@ module ocean_types_mod
      real, _ALLOCATABLE, dimension(:,:,:)   :: dSdz_zt           _NULL ! partial salinity wrt z  (psu/m) at T-point
      real, _ALLOCATABLE, dimension(:,:,:)   :: potrho            _NULL ! potential density (kg/m^3)
      real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho        _NULL ! neutral density (kg/m^3)
+     real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho_u      _NULL ! neutral density (kg/m^3) on U-points
      real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho_et     _NULL ! neutral density (kg/m^3) on T-cell east face
      real, _ALLOCATABLE, dimension(:,:,:)   :: neutralrho_nt     _NULL ! neutral density (kg/m^3) on T-cell north face
      real, _ALLOCATABLE, dimension(:,:,:)   :: watermass_factor      _NULL ! ratio |grad nrho|/|grad local ref potrho|*/delta(gamma)

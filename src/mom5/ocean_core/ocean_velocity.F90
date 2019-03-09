@@ -193,6 +193,7 @@ use ocean_velocity_diag_mod,   only: kinetic_energy, potential_energy
 use ocean_vert_mix_mod,        only: vert_friction_bgrid, vert_friction_implicit_bgrid
 use ocean_vert_mix_mod,        only: vert_friction_cgrid, vert_friction_implicit_cgrid
 use ocean_workspace_mod,       only: wrk1, wrk2, wrk3, wrk1_v  
+use ocean_tracer_util_mod,     only: diagnose_3d_rho
 
 implicit none
 
@@ -201,6 +202,8 @@ private
 ! for diagnostics 
 integer :: id_u(2)              =-1
 integer :: id_u_sq(2)           =-1
+integer :: id_u_on_nrho(2)      =-1
+integer :: id_u_sq_on_nrho(2)   =-1
 integer :: id_u_on_depth(2)     =-1
 integer :: id_usurf(2)          =-1
 integer :: id_ubott(2)          =-1
@@ -313,7 +316,7 @@ contains
 ! </DESCRIPTION>
 !
 subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
-                                Velocity, hor_grid, obc, use_blobs, introduce_blobs, &
+                                Velocity, Dens, hor_grid, obc, use_blobs, introduce_blobs, &
                                 velocity_override, debug)
 
   type(ocean_grid_type),   target, intent(in)    :: Grid
@@ -322,6 +325,7 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
   type(ocean_time_steps_type),     intent(in)    :: Time_steps 
   type(ocean_options_type),        intent(inout) :: Ocean_options
   type(ocean_velocity_type),       intent(inout) :: Velocity
+  type(ocean_density_type), target,intent(in)    :: Dens
   integer,                         intent(in)    :: hor_grid 
   logical,                         intent(in)    :: use_blobs
   logical,                         intent(in)    :: introduce_blobs
@@ -450,12 +454,20 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
      'j-current', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/),                 &
      standard_name='sea_water_y_velocity')
 
+  id_u_on_nrho(1) = register_diag_field ('ocean_model', 'u_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'i-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+  id_u_on_nrho(2) = register_diag_field ('ocean_model', 'v_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'j-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+
   id_u_sq(1)    = register_diag_field ('ocean_model', 'u_sq', Grd%vel_axes_u(1:3), Time%model_time, &
-     'i-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/),                 &
-     standard_name='sea_water_x_velocity_sq')
+     'i-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
   id_u_sq(2)    = register_diag_field ('ocean_model', 'v_sq', Grd%vel_axes_v(1:3), Time%model_time, &
-     'j-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/),                 &
-     standard_name='sea_water_y_velocity_sq')
+     'j-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
+
+  id_u_sq_on_nrho(1) = register_diag_field ('ocean_model', 'u_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'i-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
+  id_u_sq_on_nrho(2) = register_diag_field ('ocean_model', 'v_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'j-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
 
   id_u_on_depth(1) = register_diag_field ('ocean_model', 'u_on_depth', Grd%vel_axes_u_depth(1:3), Time%model_time, &
      'i-current mapped to depth surface', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
@@ -1158,7 +1170,7 @@ end subroutine ocean_implicit_accel
 ! </DESCRIPTION>
 !
 subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
-                                       vert_coordinate_class, Ext_mode, Velocity)
+                                       vert_coordinate_class, Ext_mode, Velocity, Dens)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_thickness_type),     intent(in)    :: Thickness
@@ -1166,6 +1178,7 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   integer,                        intent(in)    :: vert_coordinate_class
   type(ocean_external_mode_type), intent(inout) :: Ext_mode
   type(ocean_velocity_type),      intent(inout) :: Velocity
+  type(ocean_density_type),       intent(in)    :: Dens
 
   real, dimension(isd:ied,jsd:jed) :: tmp
   real, dimension(isd:ied,jsd:jed) :: tmpu
@@ -1360,12 +1373,28 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   ! send diagnostics to diagnostics manager 
   call diagnose_3d_u(Time, Grd, id_u(1), Velocity%u(:,:,:,1,tau))
   call diagnose_3d_u(Time, Grd, id_u(2), Velocity%u(:,:,:,2,tau))
+
+  if (id_u_on_nrho(1) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(1), Velocity%u(:,:,:,1,tau), 3)
+  endif
+  if (id_u_on_nrho(2) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(2), Velocity%u(:,:,:,2,tau), 3)
+  endif
+
   if (id_u_sq(1) > 0) then
      call diagnose_3d_u(Time, Grd, id_u_sq(1), Velocity%u(:,:,:,1,tau)*Velocity%u(:,:,:,1,tau))
   endif
   if (id_u_sq(2) > 0) then
      call diagnose_3d_u(Time, Grd, id_u_sq(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau))
   endif
+  
+  if (id_u_sq_on_nrho(1) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(1), Velocity%u(:,:,:,1,tau)*Velocity%u(:,:,:,1,tau), 3)
+  endif
+  if (id_u_sq_on_nrho(2) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau), 3)
+  endif
+
 
   call diagnose_2d_u(Time, Grd, id_usurf(1), Velocity%u(:,:,1,1,tau))
   call diagnose_2d_u(Time, Grd, id_usurf(2), Velocity%u(:,:,1,2,tau))

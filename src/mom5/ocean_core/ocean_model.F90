@@ -1248,7 +1248,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
     call ocean_tracer_util_init(Grid, Domain, use_blobs)
     call ocean_coriolis_init(Grid, Domain, Time, Time_steps, Ocean_options, horz_grid, debug=debug)
     call ocean_velocity_init(Grid, Domain, Time, Time_steps, Ocean_options, Velocity, &
-                             horz_grid, have_obc, use_blobs, introduce_blobs, &
+                             Dens, horz_grid, have_obc, use_blobs, introduce_blobs, &
                              use_velocity_override, debug=debug)
     call ocean_barotropic_init(Grid, Domain, Time, Time_steps, Ocean_options, Ext_mode, have_obc,       &
                                vert_coordinate, vert_coordinate_class, horz_grid, cmip_units, use_blobs,&
@@ -1961,7 +1961,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
     ! update to time=taup1 the ocean velocity
     call mpp_clock_begin(id_velocity)
     if(horz_grid == MOM_BGRID) then 
-       call update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, vert_coordinate_class, Ext_mode, Velocity) 
+       call update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, vert_coordinate_class, Ext_mode, Velocity, Dens)
     else 
        call update_ocean_velocity_cgrid(Time, Thickness, Adv_vel, Ext_mode, Velocity) 
     endif 
