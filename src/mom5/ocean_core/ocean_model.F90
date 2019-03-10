@@ -1268,7 +1268,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
                                      use_blobs)
 
     call ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickness, Adv_vel, &
-                                       vert_coordinate_class, horz_grid, have_obc, use_blobs, &
+                                       Dens, vert_coordinate_class, horz_grid, have_obc, use_blobs, &
                                        introduce_blobs, debug=debug)
 
     call ocean_density_init(Grid, Domain, Time, Time_steps, Thickness, T_prog(:), T_diag(:), Ocean_options, &
