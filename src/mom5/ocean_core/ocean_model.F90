@@ -1961,7 +1961,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
     ! update to time=taup1 the ocean velocity
     call mpp_clock_begin(id_velocity)
     if(horz_grid == MOM_BGRID) then 
-       call update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, vert_coordinate_class, Ext_mode, Velocity, Dens)
+       call update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, vert_coordinate_class, Ext_mode, Velocity)
     else 
        call update_ocean_velocity_cgrid(Time, Thickness, Adv_vel, Ext_mode, Velocity) 
     endif 

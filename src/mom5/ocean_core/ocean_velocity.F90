@@ -1157,7 +1157,7 @@ end subroutine ocean_implicit_accel
 ! </DESCRIPTION>
 !
 subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
-                                       vert_coordinate_class, Ext_mode, Velocity, Dens)
+                                       vert_coordinate_class, Ext_mode, Velocity)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_thickness_type),     intent(in)    :: Thickness
@@ -1165,7 +1165,6 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   integer,                        intent(in)    :: vert_coordinate_class
   type(ocean_external_mode_type), intent(inout) :: Ext_mode
   type(ocean_velocity_type),      intent(inout) :: Velocity
-  type(ocean_density_type),       intent(in)    :: Dens
 
   real, dimension(isd:ied,jsd:jed) :: tmp
   real, dimension(isd:ied,jsd:jed) :: tmpu
@@ -1361,13 +1360,6 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   call diagnose_3d_u(Time, Grd, id_u(1), Velocity%u(:,:,:,1,tau))
   call diagnose_3d_u(Time, Grd, id_u(2), Velocity%u(:,:,:,2,tau))
 
-  if (id_u_on_nrho(1) > 0) then
-     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(1), Velocity%u(:,:,:,1,tau), 3)
-  endif
-  if (id_u_on_nrho(2) > 0) then
-     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(2), Velocity%u(:,:,:,2,tau), 3)
-  endif
-
   if (id_u_sq(1) > 0) then
      call diagnose_3d_u(Time, Grd, id_u_sq(1), Velocity%u(:,:,:,1,tau)*Velocity%u(:,:,:,1,tau))
   endif
@@ -1375,14 +1367,6 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
      call diagnose_3d_u(Time, Grd, id_u_sq(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau))
   endif
   
-  if (id_u_sq_on_nrho(1) > 0) then
-     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(1), Velocity%u(:,:,:,1,tau)*Velocity%u(:,:,:,1,tau), 3)
-  endif
-  if (id_u_sq_on_nrho(2) > 0) then
-     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau), 3)
-  endif
-
-
   call diagnose_2d_u(Time, Grd, id_usurf(1), Velocity%u(:,:,1,1,tau))
   call diagnose_2d_u(Time, Grd, id_usurf(2), Velocity%u(:,:,1,2,tau))
 

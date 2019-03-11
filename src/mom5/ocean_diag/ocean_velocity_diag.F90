@@ -622,6 +622,20 @@ subroutine ocean_velocity_diagnostics(Time, Thickness, Dens, Ext_mode, Velocity)
     call potential_energy(Time, Thickness, Dens, pe_tot, pe_tot_rel, .true., .false.)
   endif 
 
+  ! diagnose velocities and squares on neutral density:
+  if (id_u_on_nrho(1) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(1), Velocity%u(:,:,:,1,Time%tau), 3)
+  endif
+  if (id_u_on_nrho(2) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_on_nrho(2), Velocity%u(:,:,:,2,Time%tau), 3)
+  endif
+  if (id_u_sq_on_nrho(1) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(1), Velocity%u(:,:,:,1,Time%tau)*Velocity%u(:,:,:,1,Time%tau), 3)
+  endif
+  if (id_u_sq_on_nrho(2) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(2), Velocity%u(:,:,:,2,Time%tau)*Velocity%u(:,:,:,2,Time%tau), 3)
+  endif
+  
   ! diagnose topography scalar 
   call compute_topostrophy(Time, Velocity)
 
