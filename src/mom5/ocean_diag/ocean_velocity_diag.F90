@@ -88,6 +88,7 @@ use ocean_workspace_mod,       only: wrk1, wrk2, wrk3, wrk4, wrk5, wrk6
 use ocean_workspace_mod,       only: wrk1_v2d, wrk2_v2d  
 use ocean_workspace_mod,       only: wrk1_2d, wrk2_2d, wrk3_2d
 use ocean_workspace_mod,       only: wrk1_v, wrk2_v, wrk3_v
+use ocean_tracer_util_mod,     only: diagnose_3d_rho
 
 implicit none
 
