@@ -163,8 +163,6 @@ integer :: horz_grid
 ! for diagnostics 
 integer :: id_wt               =-1
 integer :: id_wt_sq            =-1
-integer :: id_wt_on_nrho       =-1
-integer :: id_wt_sq_on_nrho    =-1
 integer :: id_wrho_bt          =-1
 integer :: id_uhrho_et         =-1
 integer :: id_vhrho_nt         =-1
@@ -260,7 +258,7 @@ contains
 ! </DESCRIPTION>
 !
 subroutine ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickness, Adv_vel, &
-                                         Dens, ver_coordinate_class, hor_grid, obc, use_blobs, &
+                                         ver_coordinate_class, hor_grid, obc, use_blobs, &
                                          introduce_blobs, debug)
 
   type(ocean_grid_type),       intent(in), target   :: Grid
@@ -269,7 +267,6 @@ subroutine ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickne
   type(ocean_time_steps_type), intent(in)           :: Time_steps
   type(ocean_thickness_type),  intent(in)           :: Thickness
   type(ocean_adv_vel_type),    intent(inout)        :: Adv_vel
-  type(ocean_density_type),    intent(in), target   :: Dens
   integer,                     intent(in)           :: ver_coordinate_class
   integer,                     intent(in)           :: hor_grid
   logical,                     intent(in)           :: obc
@@ -489,11 +486,6 @@ subroutine ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickne
     'dia-surface velocity T-points', 'm/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))
   id_wt_sq = register_diag_field ('ocean_model', 'wt_sq', Grd%vel_axes_wt(1:3), Time%model_time, &
     'dia-surface velocity T-points squared', 'm^2/sec^2', missing_value=missing_value, range=(/-10.e4,10.e4/))
-
-  id_wt_on_nrho = register_diag_field ('ocean_model', 'wt_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time, &
-    'dia-surface velocity T-points binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))
-  id_wt_sq_on_nrho = register_diag_field ('ocean_model', 'wt_sq_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time, &
-    'dia-surface velocity T-points squared binned to neutral density', 'm^2/sec^2', missing_value=missing_value, range=(/-10.e4,10.e4/))
 
   id_wrho_bt = register_diag_field ('ocean_model', 'wrhot', Grd%vel_axes_wt(1:3), Time%model_time, &
     'rho*dia-surface velocity T-points', '(kg/m^3)*m/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))

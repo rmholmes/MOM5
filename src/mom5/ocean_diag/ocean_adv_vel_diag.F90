@@ -101,6 +101,10 @@ integer :: id_ty_trans_nrho=-1
 integer :: id_tx_trans_theta=-1
 integer :: id_ty_trans_theta=-1
 
+! for vertical velocity on neutral density
+integer :: id_wt_on_nrho       =-1
+integer :: id_wt_sq_on_nrho    =-1
+
 ! for specifying transport units
 ! can either be Sv or mks
 character(len=32) :: transport_dims ='Sv (10^9 kg/s)' 
@@ -289,6 +293,12 @@ id_tx_trans_theta = register_diag_field ('ocean_model','tx_trans_theta', Dens%th
 id_ty_trans_theta = register_diag_field ('ocean_model','ty_trans_theta', Dens%theta_axes_flux_y(1:3),&
                     Time%model_time, 'T-cell j-mass transport on theta',trim(transport_dims),        &
                     missing_value=missing_value, range=(/-1e20,1e20/))
+
+id_wt_on_nrho = register_diag_field ('ocean_model', 'wt_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time, &
+     'dia-surface velocity T-points binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.e4,10.e4/))
+id_wt_sq_on_nrho = register_diag_field ('ocean_model', 'wt_sq_on_nrho', Dens%neutralrho_axes(1:3), Time%model_time, &
+     'dia-surface velocity T-points squared binned to neutral density', 'm^2/sec^2', missing_value=missing_value, range=(/-10.e4,10.e4/))
+
 
 ! set ids for clocks
 id_adv_vel_numerics   = mpp_clock_id('(Ocean adv_vel_diag: numerics)'    ,grain=CLOCK_ROUTINE)
