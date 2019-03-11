@@ -258,7 +258,7 @@ contains
 ! </DESCRIPTION>
 !
 subroutine ocean_advection_velocity_init(Grid, Domain, Time, Time_steps, Thickness, Adv_vel, &
-                                         ver_coordinate_class, hor_grid, obc, use_blobs, &
+                                         ver_coordinate_class, hor_grid, obc, use_blobs,     &
                                          introduce_blobs, debug)
 
   type(ocean_grid_type),       intent(in), target   :: Grid
