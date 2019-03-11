@@ -522,7 +522,7 @@ contains
 ! </DESCRIPTION>
 !
 function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, Time_steps, &
-                                 Dens, num_prog, vert_coordinate_type, obc, cmip_units, use_blobs, debug)   &
+                                 num_prog, vert_coordinate_type, obc, cmip_units, use_blobs, debug)   &
                                  result (T_prog)  
   
   type(ocean_grid_type),       intent(in), target   :: Grid
@@ -531,7 +531,6 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   type(ocean_domain_type),     intent(in), target   :: Domain
   type(ocean_time_type),       intent(in)           :: Time
   type(ocean_time_steps_type), intent(in)           :: Time_steps
-  type(ocean_density_type),    intent(in), target   :: Dens
   integer,                     intent(out)          :: num_prog
   integer,                     intent(in)           :: vert_coordinate_type 
   logical,                     intent(in)           :: obc
@@ -772,9 +771,6 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   allocate( id_eta_smooth_on_nrho(num_prog_tracers) )
   allocate( id_pbot_smooth    (num_prog_tracers) )
   allocate( id_prog           (num_prog_tracers) )
-  allocate( id_prog_dx_on_nrho(num_prog_tracers) )
-  allocate( id_prog_dy_on_nrho(num_prog_tracers) )
-  allocate( id_prog_dz_on_nrho(num_prog_tracers) )
   allocate( id_prog_explicit  (num_prog_tracers) )
   allocate( id_prog_rhodzt    (num_prog_tracers) )
   allocate( id_prog_int_rhodz (num_prog_tracers) )
@@ -810,9 +806,6 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   id_eta_smooth_on_nrho(:)= -1
   id_pbot_smooth(:)    = -1
   id_prog(:)           = -1
-  id_prog_dx_on_nrho(:)= -1
-  id_prog_dy_on_nrho(:)= -1
-  id_prog_dz_on_nrho(:)= -1
   id_prog_explicit(:)  = -1
   id_prog_rhodzt(:)    = -1
   id_prog_int_rhodz(:) = -1
@@ -1244,27 +1237,6 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array,  &
             standard_name='sea_water_potential_temperature')
-
-       id_prog_dx_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dx_on_nrho',                  &
-            Dens%neutralrho_axes_flux_x(1:3),                &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
-
-       id_prog_dy_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dy_on_nrho',                  &
-            Dens%neutralrho_axes_flux_y(1:3),                &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
-
-       id_prog_dz_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dz_on_nrho',                  &
-            Dens%neutralrho_axes(1:3),                       &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
 
        id_surf_tracer(n) = register_diag_field ('ocean_model', &
             'surface_'//trim(prog_name),                       &
@@ -3145,6 +3117,13 @@ subroutine ocean_tracer_diagnostics_init(Time, Dens, T_diag, T_prog, ver_coordin
   nrho_work2(:,:,:) = 0.0  
   nrho_mass(:,:,:)  = 0.0  
 
+  allocate( id_prog_dx_on_nrho(num_prog_tracers) )
+  allocate( id_prog_dy_on_nrho(num_prog_tracers) )
+  allocate( id_prog_dz_on_nrho(num_prog_tracers) )
+  id_prog_dx_on_nrho(:)= -1
+  id_prog_dy_on_nrho(:)= -1
+  id_prog_dz_on_nrho(:)= -1
+
   do n=1,num_diag_tracers
      if (T_diag(n)%name == 'frazil') index_frazil = n
   enddo
@@ -3160,6 +3139,28 @@ subroutine ocean_tracer_diagnostics_init(Time, Dens, T_diag, T_prog, ver_coordin
           trim(T_prog(n)%name)//'_eta_smooth_on_nrho', Dens%neutralrho_axes(1:3),           &
           Time%model_time, 'surface smoother for ' // trim(T_prog(n)%longname)//" binned to neutral density", &
           trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e20,1.e20/))
+
+     ! Tracer grid-cell differences
+     id_prog_dx_on_nrho(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dx_on_nrho',                  &
+            Dens%neutralrho_axes_flux_x(1:3),                &
+            Time%model_time, prog_longname,                  &
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
+
+     id_prog_dy_on_nrho(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dy_on_nrho',                  &
+            Dens%neutralrho_axes_flux_y(1:3),                &
+            Time%model_time, prog_longname,                  &
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
+
+     id_prog_dz_on_nrho(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dz_on_nrho',                  &
+            Dens%neutralrho_axes(1:3),                       &
+            Time%model_time, prog_longname,                  &
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
   enddo
 
   ! time tendency for locally referenced potential density 
