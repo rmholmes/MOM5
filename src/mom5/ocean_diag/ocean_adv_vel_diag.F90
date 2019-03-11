@@ -47,6 +47,7 @@ use ocean_types_mod,      only: ocean_prog_tracer_type, ocean_thickness_type
 use ocean_types_mod,      only: ocean_time_type, ocean_time_steps_type
 use ocean_util_mod,       only: matrix, diagnose_2d, diagnose_3d, diagnose_3d_u
 use ocean_workspace_mod,  only: wrk1, wrk2, wrk1_2d
+use ocean_tracer_util_mod,only: diagnose_3d_rho
 
 implicit none
 
@@ -358,6 +359,16 @@ subroutine ocean_adv_vel_diagnostics(Time, Thickness, Adv_vel, T_prog, Dens, vis
   call mpp_clock_begin(id_transport_on_theta)
     call transport_on_theta(Time, Dens, T_prog(index_temp), Adv_vel)
   call mpp_clock_end(id_transport_on_theta)
+
+  ! Diagnose wt and wt_sq on nrho (NOTE: Only works for DEPTH_BASED vertical coordinates):
+  if (id_wt_on_nrho > 0 .or. id_wt_sq_on_nrho > 0)  then
+     if (id_wt_on_nrho > 0) then
+        call diagnose_3d_rho(Time, Dens, id_wt_on_nrho, rho0r*Adv_vel%wrho_bt(:,:,1:nk))
+     endif
+     if (id_wt_sq_on_nrho > 0) then
+        call diagnose_3d_rho(Time, Dens, id_wt_sq_on_nrho, (rho0r*Adv_vel%wrho_bt(:,:,1:nk))**2.0)
+     endif
+  endif
 
 
 end subroutine ocean_adv_vel_diagnostics

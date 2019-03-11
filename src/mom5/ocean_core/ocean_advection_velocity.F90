@@ -719,19 +719,13 @@ subroutine ocean_advection_velocity (Velocity, Time, Thickness, Dens, pme, river
 
   ! send advective velocity components to diagnostic manager 
 
-  if (id_wt > 0 .or. id_wt_sq > 0 .or. id_wt_on_nrho > 0 .or. id_wt_sq_on_nrho > 0)  then
+  if (id_wt > 0 .or. id_wt_sq > 0)  then
       if(vert_coordinate_class==DEPTH_BASED) then 
          if (id_wt > 0) then
             call diagnose_3d(Time, Grd, id_wt, rho0r*Adv_vel%wrho_bt(:,:,1:nk))
          endif
          if (id_wt_sq > 0) then
             call diagnose_3d(Time, Grd, id_wt_sq, (rho0r*Adv_vel%wrho_bt(:,:,1:nk))**2.0)
-         endif
-         if (id_wt_on_nrho > 0) then
-            call diagnose_3d_rho(Time, Dens, id_wt_on_nrho, rho0r*Adv_vel%wrho_bt(:,:,1:nk))
-         endif
-         if (id_wt_sq_on_nrho > 0) then
-            call diagnose_3d_rho(Time, Dens, id_wt_sq_on_nrho, (rho0r*Adv_vel%wrho_bt(:,:,1:nk))**2.0)
          endif
       else 
           wrk1(:,:,:) = 0.0
@@ -749,12 +743,6 @@ subroutine ocean_advection_velocity (Velocity, Time, Thickness, Dens, pme, river
           endif
           if (id_wt_sq > 0) then
              call diagnose_3d(Time, Grd, id_wt_sq, wrk1(:,:,:)*wrk1(:,:,:))
-          endif
-          if (id_wt_on_nrho > 0) then
-             call diagnose_3d_rho(Time, Dens, id_wt_on_nrho, wrk1(:,:,:))
-          endif
-          if (id_wt_sq_on_nrho > 0) then
-             call diagnose_3d_rho(Time, Dens, id_wt_sq_on_nrho, wrk1(:,:,:)*wrk1(:,:,:))
           endif
       endif
   endif
