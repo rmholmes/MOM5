@@ -1248,7 +1248,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
     call ocean_tracer_util_init(Grid, Domain, use_blobs)
     call ocean_coriolis_init(Grid, Domain, Time, Time_steps, Ocean_options, horz_grid, debug=debug)
     call ocean_velocity_init(Grid, Domain, Time, Time_steps, Ocean_options, Velocity, &
-                             Dens, horz_grid, have_obc, use_blobs, introduce_blobs, &
+                             horz_grid, have_obc, use_blobs, introduce_blobs, &
                              use_velocity_override, debug=debug)
     call ocean_barotropic_init(Grid, Domain, Time, Time_steps, Ocean_options, Ext_mode, have_obc,       &
                                vert_coordinate, vert_coordinate_class, horz_grid, cmip_units, use_blobs,&

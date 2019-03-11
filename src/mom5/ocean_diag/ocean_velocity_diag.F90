@@ -186,6 +186,10 @@ real :: ucell_mass
 integer :: id_stokes_force_x =-1
 integer :: id_stokes_force_y =-1
 
+! for velocity variance on neutral density
+integer :: id_u_on_nrho(2)      =-1
+integer :: id_u_sq_on_nrho(2)   =-1
+
 ! for output
 integer :: unit=6
 
@@ -256,12 +260,13 @@ contains
 ! terms. 
 ! </DESCRIPTION>
 !
-subroutine ocean_velocity_diag_init(Grid, Domain, Time, Time_steps, hor_grid)
+subroutine ocean_velocity_diag_init(Grid, Domain, Time, Time_steps, Dens, hor_grid)
 
 type(ocean_grid_type),       target, intent(in) :: Grid
 type(ocean_domain_type),     target, intent(in) :: Domain
 type(ocean_time_type),               intent(in) :: Time
 type(ocean_time_steps_type),         intent(in) :: Time_steps
+type(ocean_density_type),            intent(in) :: Dens
 integer,                             intent(in) :: hor_grid 
 
 integer :: ioun, io_status, ierr
@@ -385,6 +390,18 @@ id_stokes_force_x = register_diag_field ('ocean_model', 'stokes_force_x', Grd%ve
 id_stokes_force_y = register_diag_field ('ocean_model', 'stokes_force_y', Grd%vel_axes_v(1:3), &
       Time%model_time, 'Meridional component to Stokes Coriolis force', '(kg/m^3)*(m^2/s^2)',  &
       missing_value=missing_value, range=(/-1e9,1e9/))
+
+id_u_on_nrho(1) = register_diag_field ('ocean_model', 'u_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'i-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+id_u_on_nrho(2) = register_diag_field ('ocean_model', 'v_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'j-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+
+id_u_sq_on_nrho(1) = register_diag_field ('ocean_model', 'u_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'i-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
+id_u_sq_on_nrho(2) = register_diag_field ('ocean_model', 'v_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
+     'j-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
+
+
 
 ! kinetic energy scalar
 id_ke_tot = register_diag_field ('ocean_model', 'ke_tot', Time%model_time, &

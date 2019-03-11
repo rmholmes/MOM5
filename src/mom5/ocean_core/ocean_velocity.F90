@@ -202,8 +202,6 @@ private
 ! for diagnostics 
 integer :: id_u(2)              =-1
 integer :: id_u_sq(2)           =-1
-integer :: id_u_on_nrho(2)      =-1
-integer :: id_u_sq_on_nrho(2)   =-1
 integer :: id_u_on_depth(2)     =-1
 integer :: id_usurf(2)          =-1
 integer :: id_ubott(2)          =-1
@@ -316,7 +314,7 @@ contains
 ! </DESCRIPTION>
 !
 subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
-                                Velocity, Dens, hor_grid, obc, use_blobs, introduce_blobs, &
+                                Velocity, hor_grid, obc, use_blobs, introduce_blobs, &
                                 velocity_override, debug)
 
   type(ocean_grid_type),   target, intent(in)    :: Grid
@@ -325,7 +323,6 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
   type(ocean_time_steps_type),     intent(in)    :: Time_steps 
   type(ocean_options_type),        intent(inout) :: Ocean_options
   type(ocean_velocity_type),       intent(inout) :: Velocity
-  type(ocean_density_type), target,intent(in)    :: Dens
   integer,                         intent(in)    :: hor_grid 
   logical,                         intent(in)    :: use_blobs
   logical,                         intent(in)    :: introduce_blobs
@@ -454,20 +451,10 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
      'j-current', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/),                 &
      standard_name='sea_water_y_velocity')
 
-  id_u_on_nrho(1) = register_diag_field ('ocean_model', 'u_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
-     'i-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
-  id_u_on_nrho(2) = register_diag_field ('ocean_model', 'v_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
-     'j-current binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
-
   id_u_sq(1)    = register_diag_field ('ocean_model', 'u_sq', Grd%vel_axes_u(1:3), Time%model_time, &
      'i-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
   id_u_sq(2)    = register_diag_field ('ocean_model', 'v_sq', Grd%vel_axes_v(1:3), Time%model_time, &
      'j-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
-
-  id_u_sq_on_nrho(1) = register_diag_field ('ocean_model', 'u_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
-     'i-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
-  id_u_sq_on_nrho(2) = register_diag_field ('ocean_model', 'v_sq_on_nrho', Dens%neutralrho_axes_u(1:3), Time%model_time, &
-     'j-current squared binned to neutral density', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/))
 
   id_u_on_depth(1) = register_diag_field ('ocean_model', 'u_on_depth', Grd%vel_axes_u_depth(1:3), Time%model_time, &
      'i-current mapped to depth surface', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
