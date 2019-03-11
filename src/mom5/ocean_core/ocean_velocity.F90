@@ -193,7 +193,6 @@ use ocean_velocity_diag_mod,   only: kinetic_energy, potential_energy
 use ocean_vert_mix_mod,        only: vert_friction_bgrid, vert_friction_implicit_bgrid
 use ocean_vert_mix_mod,        only: vert_friction_cgrid, vert_friction_implicit_cgrid
 use ocean_workspace_mod,       only: wrk1, wrk2, wrk3, wrk1_v  
-use ocean_tracer_util_mod,     only: diagnose_3d_rho
 
 implicit none
 
@@ -1366,7 +1365,7 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   if (id_u_sq(2) > 0) then
      call diagnose_3d_u(Time, Grd, id_u_sq(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau))
   endif
-  
+
   call diagnose_2d_u(Time, Grd, id_usurf(1), Velocity%u(:,:,1,1,tau))
   call diagnose_2d_u(Time, Grd, id_usurf(2), Velocity%u(:,:,1,2,tau))
 

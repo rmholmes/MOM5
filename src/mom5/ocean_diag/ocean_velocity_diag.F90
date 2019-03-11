@@ -636,7 +636,7 @@ subroutine ocean_velocity_diagnostics(Time, Thickness, Dens, Ext_mode, Velocity)
   if (id_u_sq_on_nrho(2) > 0) then
      call diagnose_3d_rho(Time, Dens, id_u_sq_on_nrho(2), Velocity%u(:,:,:,2,Time%tau)*Velocity%u(:,:,:,2,Time%tau), 3)
   endif
-  
+
   ! diagnose topography scalar 
   call compute_topostrophy(Time, Velocity)
 
