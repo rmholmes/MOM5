@@ -3142,25 +3142,25 @@ subroutine ocean_tracer_diagnostics_init(Time, Dens, T_diag, T_prog, ver_coordin
 
      ! Tracer grid-cell differences
      id_prog_dx_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dx_on_nrho',                  &
+            trim(T_prog(n)%name)//'_dx_on_nrho',                  &
             Dens%neutralrho_axes_flux_x(1:3),                &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            Time%model_time, T_prog(n)%longname// " grid-dx binned to neutral density", &
+            trim(T_prog(n)%units),                     &
+            missing_value=missing_value, range=(/-1.e20,1.e20/))
 
      id_prog_dy_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dy_on_nrho',                  &
+            trim(T_prog(n)%name)//'_dy_on_nrho',                  &
             Dens%neutralrho_axes_flux_y(1:3),                &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            Time%model_time, T_prog(n)%longname// " grid-dy binned to neutral density", &
+            trim(T_prog(n)%units),                     &
+            missing_value=missing_value, range=(/-1.e20,1.e20/))
 
      id_prog_dz_on_nrho(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dz_on_nrho',                  &
+            trim(T_prog(n)%name)//'_dz_on_nrho',                  &
             Dens%neutralrho_axes(1:3),                       &
-            Time%model_time, prog_longname,                  &
-            trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            Time%model_time, T_prog(n)%longname// " grid-dz binned to neutral density", &
+            trim(T_prog(n)%units),                     &
+            missing_value=missing_value, range=(/-1.e20,1.e20/))
   enddo
 
   ! time tendency for locally referenced potential density 
