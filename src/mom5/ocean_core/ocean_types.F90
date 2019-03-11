@@ -450,6 +450,7 @@ module ocean_types_mod
      integer, dimension(3)                 :: neutralrho_axes         ! axis ids for diagnosing neutral density 
      integer, dimension(3)                 :: neutralrho_axes_flux_x  ! axis ids for diagnosing x-flux 
      integer, dimension(3)                 :: neutralrho_axes_flux_y  ! axis ids for diagnosing y-flux 
+     integer, dimension(3)                 :: neutralrho_axes_u       ! axis ids for diagnosing neutral density on u-points
      integer, dimension(3)                 :: theta_axes              ! axis ids for potential temperature 
      integer, dimension(3)                 :: theta_axes_flux_x       ! axis ids for diagnosing x-flux 
      integer, dimension(3)                 :: theta_axes_flux_y       ! axis ids for diagnosing y-flux 
@@ -1002,6 +1003,7 @@ module ocean_types_mod
      integer, dimension(3)                  :: neutralrho_axes         ! axis ids for diagnosing neutral density 
      integer, dimension(3)                  :: neutralrho_axes_flux_x      ! axis ids for diagnosing x-flux 
      integer, dimension(3)                  :: neutralrho_axes_flux_y      ! axis ids for diagnosing y-flux 
+     integer, dimension(3)                  :: neutralrho_axes_u           ! axis ids for diagnosing neutral density on u-points
      integer, dimension(3)                  :: theta_axes              ! axis ids for potential temperature 
      integer, dimension(3)                  :: theta_axes_flux_x           ! axis ids for diagnosing x-flux 
      integer, dimension(3)                  :: theta_axes_flux_y           ! axis ids for diagnosing y-flux 

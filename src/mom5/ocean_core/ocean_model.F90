@@ -1260,7 +1260,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
 
     ! initialize prognostic tracers 
     T_prog => ocean_prog_tracer_init(Grid, Thickness, Ocean_options, Domain, Time, Time_steps, &
-                                     num_prog_tracers, vert_coordinate_type, have_obc,         & 
+                                     Dens, num_prog_tracers, vert_coordinate_type, have_obc,         & 
                                      cmip_units, use_blobs, debug=debug)
                                      
     ! initialize diagnostic tracers 

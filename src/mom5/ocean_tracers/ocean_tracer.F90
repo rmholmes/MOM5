@@ -522,7 +522,7 @@ contains
 ! </DESCRIPTION>
 !
 function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, Time_steps, &
-                                 num_prog, vert_coordinate_type, obc, cmip_units, use_blobs, debug)   &
+                                 Dens, num_prog, vert_coordinate_type, obc, cmip_units, use_blobs, debug)   &
                                  result (T_prog)  
   
   type(ocean_grid_type),       intent(in), target   :: Grid
@@ -531,6 +531,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   type(ocean_domain_type),     intent(in), target   :: Domain
   type(ocean_time_type),       intent(in)           :: Time
   type(ocean_time_steps_type), intent(in)           :: Time_steps
+  type(ocean_density_type),    intent(in), target   :: Dens
   integer,                     intent(out)          :: num_prog
   integer,                     intent(in)           :: vert_coordinate_type 
   logical,                     intent(in)           :: obc
@@ -1246,14 +1247,14 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
 
        id_prog_dx_on_nrho(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dx_on_nrho',                  &
-            Dens%neutralrho_flux_x(1:3),                     &
+            Dens%neutralrho_axes_flux_x(1:3),                &
             Time%model_time, prog_longname,                  &
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array)
 
        id_prog_dy_on_nrho(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dy_on_nrho',                  &
-            Dens%neutralrho_flux_y(1:3),                     &
+            Dens%neutralrho_axes_flux_y(1:3),                &
             Time%model_time, prog_longname,                  &
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array)
@@ -3842,8 +3843,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
 
   do n=1,num_prog_tracers
 
-     if(id_prog(n) > 0 .or. id_prog_dx_on_nrho(n) > 0 .or. &
-          id_prog_dy_on_nrho(n) > 0 .or. id_prog_dz_on_nrho(n) > 0) then
+     if(id_prog(n) > 0 .or. id_prog_dx_on_nrho(n) > 0 .or. id_prog_dy_on_nrho(n) > 0 .or. id_prog_dz_on_nrho(n) > 0) then
         if( n==index_temp) then
            wrk1(:,:,:) = 0.0
            do k=1,nk
@@ -3856,16 +3856,13 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
            if (id_prog(n) > 0) then
               call diagnose_3d(Time, Grd, id_prog(n), wrk1(:,:,:))
            endif
+
            if (id_prog_dx_on_nrho(n) > 0 .or. id_prog_dy_on_nrho(n) > 0) then
               wrk2(:,:,:) = 0.0
               wrk3(:,:,:) = 0.0
               do k=1,nk
-                 do j=jsc,jec
-                    do i=isc,iec
-                       wrk2(i,j,k) = FDX_T(wrk1(i,j,k))
-                       wrk3(i,j,k) = FDY_T(wrk1(i,j,k))
-                    enddo
-                 enddo
+                 wrk2(:,:,k) = FDX_T(wrk1(:,:,k))
+                 wrk3(:,:,k) = FDY_T(wrk1(:,:,k))
               enddo
 
               if (id_prog_dx_on_nrho(n) > 0) then
@@ -3874,6 +3871,8 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
               if (id_prog_dy_on_nrho(n) > 0) then
                  call diagnose_3d_rho(Time, Dens, id_prog_dy_on_nrho(n), wrk3(:,:,:),2)
               endif
+           endif
+
            if (id_prog_dz_on_nrho(n) > 0) then
               wrk4(:,:,:) = 0.0
               do k=2,nk
@@ -3888,7 +3887,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
            endif
         else
            call diagnose_3d(Time, Grd, id_prog(n), T_prog(n)%field(:,:,:,tau))
-         endif
+        endif
      endif  
 
      if(id_prog_rhodzt(n)  > 0) then
