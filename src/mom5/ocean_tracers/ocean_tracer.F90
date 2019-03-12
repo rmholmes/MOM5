@@ -317,9 +317,9 @@ integer, allocatable, dimension(:) :: id_eta_smooth
 integer, allocatable, dimension(:) :: id_eta_smooth_on_nrho
 integer, allocatable, dimension(:) :: id_pbot_smooth
 integer, allocatable, dimension(:) :: id_prog
-integer, allocatable, dimension(:) :: id_prog_dx
-integer, allocatable, dimension(:) :: id_prog_dy
-integer, allocatable, dimension(:) :: id_prog_dz
+integer, allocatable, dimension(:) :: id_prog_dxsq
+integer, allocatable, dimension(:) :: id_prog_dysq
+integer, allocatable, dimension(:) :: id_prog_dzsq
 integer, allocatable, dimension(:) :: id_progT
 integer, allocatable, dimension(:) :: id_prog_explicit
 integer, allocatable, dimension(:) :: id_prog_rhodzt
@@ -771,9 +771,9 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   allocate( id_eta_smooth_on_nrho(num_prog_tracers) )
   allocate( id_pbot_smooth    (num_prog_tracers) )
   allocate( id_prog           (num_prog_tracers) )
-  allocate( id_prog_dx        (num_prog_tracers) )
-  allocate( id_prog_dy        (num_prog_tracers) )
-  allocate( id_prog_dz        (num_prog_tracers) )
+  allocate( id_prog_dxsq      (num_prog_tracers) )
+  allocate( id_prog_dysq      (num_prog_tracers) )
+  allocate( id_prog_dzsq      (num_prog_tracers) )
   allocate( id_prog_explicit  (num_prog_tracers) )
   allocate( id_prog_rhodzt    (num_prog_tracers) )
   allocate( id_prog_int_rhodz (num_prog_tracers) )
@@ -809,9 +809,9 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   id_eta_smooth_on_nrho(:)= -1
   id_pbot_smooth(:)    = -1
   id_prog(:)           = -1
-  id_prog_dx(:)        = -1
-  id_prog_dy(:)        = -1
-  id_prog_dz(:)        = -1
+  id_prog_dxsq(:)      = -1
+  id_prog_dysq(:)      = -1
+  id_prog_dzsq(:)      = -1
   id_prog_explicit(:)  = -1
   id_prog_rhodzt(:)    = -1
   id_prog_int_rhodz(:) = -1
@@ -1244,24 +1244,24 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
             missing_value=missing_value, range=range_array,  &
             standard_name='sea_water_potential_temperature')
 
-       id_prog_dx(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dx',                          &
+       id_prog_dxsq(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dxsq',                          &
             Grd%tracer_axes_flux_x(1:3),                     &
-            Time%model_time, trim(prog_longname)//' grid-dx',&
+            Time%model_time, trim(prog_longname)//' grid-dxsq',&
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array)
 
-       id_prog_dy(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dy',                          &
+       id_prog_dysq(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dysq',                          &
             Grd%tracer_axes_flux_y(1:3),                     &
-            Time%model_time, trim(prog_longname)//' grid-dy',&
+            Time%model_time, trim(prog_longname)//' grid-dysq',&
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array)
 
-       id_prog_dz(n) = register_diag_field ('ocean_model',   &
-            trim(prog_name)//'_dz',                          &
+       id_prog_dzsq(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dzsq',                          &
             Grd%tracer_axes_wt(1:3),                         &
-            Time%model_time, trim(prog_longname)//' grid-dz',&
+            Time%model_time, trim(prog_longname)//' grid-dzsq',&
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array)
 
@@ -3846,7 +3846,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
 
   do n=1,num_prog_tracers
 
-     if(id_prog(n) > 0 .or. id_prog_dx(n) > 0 .or. id_prog_dy(n) > 0 .or. id_prog_dz(n) > 0) then
+     if(id_prog(n) > 0 .or. id_prog_dxsq(n) > 0 .or. id_prog_dysq(n) > 0 .or. id_prog_dzsq(n) > 0) then
         if( n==index_temp) then
            wrk1(:,:,:) = 0.0
            do k=1,nk
@@ -3861,7 +3861,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
               call diagnose_3d(Time, Grd, id_prog(n), wrk1(:,:,:))
            endif
            
-           if (id_prog_dx(n) > 0 .or. id_prog_dy(n) > 0) then
+           if (id_prog_dxsq(n) > 0 .or. id_prog_dysq(n) > 0) then
               wrk2(:,:,:) = 0.0
               wrk3(:,:,:) = 0.0
               do k=1,nk
@@ -3871,15 +3871,15 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
 
               call mpp_update_domains(wrk2(:,:,:), Dom%domain2D)
               call mpp_update_domains(wrk3(:,:,:), Dom%domain2D)
-              if (id_prog_dx(n) > 0) then
-                 call diagnose_3d(Time, Grd, id_prog_dx(n), wrk2(:,:,:))
+              if (id_prog_dxsq(n) > 0) then
+                 call diagnose_3d(Time, Grd, id_prog_dxsq(n), wrk2(:,:,:)*wrk2(:,:,:))
               endif
-              if (id_prog_dy(n) > 0) then
-                 call diagnose_3d(Time, Grd, id_prog_dy(n), wrk3(:,:,:))
+              if (id_prog_dysq(n) > 0) then
+                 call diagnose_3d(Time, Grd, id_prog_dysq(n), wrk3(:,:,:)*wrk3(:,:,:))
               endif
            endif
 
-           if (id_prog_dz(n) > 0) then
+           if (id_prog_dzsq(n) > 0) then
               wrk4(:,:,:) = 0.0
               do k=1,nk-1
                  do j=jsc,jec
@@ -3889,7 +3889,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
                  enddo
               enddo
 
-              call diagnose_3d(Time, Grd, id_prog_dz(n), wrk4(:,:,:))
+              call diagnose_3d(Time, Grd, id_prog_dzsq(n), wrk4(:,:,:)*wrk4(:,:,:))
            endif              
         else
            call diagnose_3d(Time, Grd, id_prog(n), T_prog(n)%field(:,:,:,tau))
