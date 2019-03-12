@@ -219,6 +219,7 @@ use ocean_util_mod,             only: write_timestamp, diagnose_2d, diagnose_3d,
 use ocean_tracer_util_mod,      only: diagnose_3d_rho
 use ocean_vert_mix_mod,         only: vert_diffuse, vert_diffuse_implicit
 use ocean_workspace_mod,        only: wrk1, wrk2, wrk3, wrk4, wrk5, wrk6, wrk1_2d
+use ocean_operators_mod,        only: FDX_T, FDY_T
 
 implicit none
 
@@ -316,6 +317,9 @@ integer, allocatable, dimension(:) :: id_eta_smooth
 integer, allocatable, dimension(:) :: id_eta_smooth_on_nrho
 integer, allocatable, dimension(:) :: id_pbot_smooth
 integer, allocatable, dimension(:) :: id_prog
+integer, allocatable, dimension(:) :: id_prog_dx
+integer, allocatable, dimension(:) :: id_prog_dy
+integer, allocatable, dimension(:) :: id_prog_dz
 integer, allocatable, dimension(:) :: id_progT
 integer, allocatable, dimension(:) :: id_prog_explicit
 integer, allocatable, dimension(:) :: id_prog_rhodzt
@@ -767,6 +771,9 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   allocate( id_eta_smooth_on_nrho(num_prog_tracers) )
   allocate( id_pbot_smooth    (num_prog_tracers) )
   allocate( id_prog           (num_prog_tracers) )
+  allocate( id_prog_dx        (num_prog_tracers) )
+  allocate( id_prog_dy        (num_prog_tracers) )
+  allocate( id_prog_dz        (num_prog_tracers) )
   allocate( id_prog_explicit  (num_prog_tracers) )
   allocate( id_prog_rhodzt    (num_prog_tracers) )
   allocate( id_prog_int_rhodz (num_prog_tracers) )
@@ -802,6 +809,9 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   id_eta_smooth_on_nrho(:)= -1
   id_pbot_smooth(:)    = -1
   id_prog(:)           = -1
+  id_prog_dx(:)        = -1
+  id_prog_dy(:)        = -1
+  id_prog_dz(:)        = -1
   id_prog_explicit(:)  = -1
   id_prog_rhodzt(:)    = -1
   id_prog_int_rhodz(:) = -1
@@ -1233,6 +1243,27 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array,  &
             standard_name='sea_water_potential_temperature')
+
+       id_prog_dx(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dx',                          &
+            Grd%tracer_axes_flux_x(1:3),                     &
+            Time%model_time, trim(prog_longname)//' grid-dx',&
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
+
+       id_prog_dy(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dy',                          &
+            Grd%tracer_axes_flux_y(1:3),                     &
+            Time%model_time, trim(prog_longname)//' grid-dy',&
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
+
+       id_prog_dz(n) = register_diag_field ('ocean_model',   &
+            trim(prog_name)//'_dz',                          &
+            Grd%tracer_axes_wt(1:3),                         &
+            Time%model_time, trim(prog_longname)//' grid-dz',&
+            trim(temp_units),                                &
+            missing_value=missing_value, range=range_array)
 
        id_surf_tracer(n) = register_diag_field ('ocean_model', &
             'surface_'//trim(prog_name),                       &
@@ -2197,7 +2228,7 @@ end function ocean_diag_tracer_init  !}
 ! </DESCRIPTION>
 !
 subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
-                                T_prog, T_diag, L_system,   &
+                                T_prog, T_diag, Domain, L_system,   &
                                 Velocity, Ext_mode, EL_diag, use_blobs)
 
   type(ocean_time_type),          intent(in)    :: Time 
@@ -2209,6 +2240,7 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
 
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_diag_tracer_type),   intent(inout) :: T_diag(:)
+  type(ocean_domain_type), target,intent(in)    :: Domain
   type(ocean_lagrangian_type),    intent(inout) :: L_system
   type(ocean_velocity_type),      intent(in)    :: Velocity
   type(ocean_external_mode_type), intent(in)    :: Ext_mode
@@ -2512,7 +2544,7 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
 
 
   ! send some tracer diagnostics at time tau 
-  call send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_blobs)
+  call send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens, use_blobs)
 
   ! compute watermass diagnostics 
   call watermass_diag(Time, T_prog, T_diag, Dens, Thickness, pme)
@@ -3792,11 +3824,12 @@ end subroutine ocean_tracer_diagnostics_init
 ! 
 ! </DESCRIPTION>
 !
-subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_blobs)
+subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens, use_blobs)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_diag_tracer_type),   intent(in)    :: T_diag(:)
+  type(ocean_domain_type), target,intent(in)    :: Domain
   type(ocean_thickness_type),     intent(in)    :: Thickness
   type(ocean_density_type),       intent(in)    :: Dens
   logical,                        intent(in)    :: use_blobs 
@@ -3809,9 +3842,11 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
   tau   = Time%tau
   taup1 = Time%taup1
 
+  Dom => Domain
+
   do n=1,num_prog_tracers
 
-     if(id_prog(n) > 0) then
+     if(id_prog(n) > 0 .or. id_prog_dx(n) > 0 .or. id_prog_dy(n) > 0 .or. id_prog_dz(n) > 0) then
         if( n==index_temp) then
            wrk1(:,:,:) = 0.0
            do k=1,nk
@@ -3821,7 +3856,41 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
                  enddo
               enddo
            enddo
-           call diagnose_3d(Time, Grd, id_prog(n), wrk1(:,:,:))
+
+           if (id_prog(n) > 0) then
+              call diagnose_3d(Time, Grd, id_prog(n), wrk1(:,:,:))
+           endif
+           
+           if (id_prog_dx(n) > 0 .or. id_prog_dy(n) > 0) then
+              wrk2(:,:,:) = 0.0
+              wrk3(:,:,:) = 0.0
+              do k=1,nk
+                 wrk2(:,:,k) = FDX_T(wrk1(:,:,k))
+                 wrk3(:,:,k) = FDY_T(wrk1(:,:,k))
+              enddo
+
+              call mpp_update_domains(wrk2(:,:,:), Dom%domain2D)
+              call mpp_update_domains(wrk3(:,:,:), Dom%domain2D)
+              if (id_prog_dx(n) > 0) then
+                 diagnose_3d(Time, Grd, id_prog_dx(n), wrk2(:,:,:))
+              endif
+              if (id_prog_dy(n) > 0) then
+                 diagnose_3d(Time, Grd, id_prog_dy(n), wrk3(:,:,:))
+              endif
+           endif
+
+           if (id_prog_dz(n) > 0) then
+              wrk4(:,:,:) = 0.0
+              do k=1,nk-1
+                 do j=jsc,jec
+                    do i=isc,iec
+                       wrk4(i,j,k) = wrk1(i,j,k+1)-wrk1(i,j,k)
+                    enddo
+                 enddo
+              enddo
+
+              call diagnose_3d(Time, Grd, id_prog_dz(n), wrk4(:,:,:))
+           endif              
         else
            call diagnose_3d(Time, Grd, id_prog(n), T_prog(n)%field(:,:,:,tau))
          endif
