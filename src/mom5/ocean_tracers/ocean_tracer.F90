@@ -3872,10 +3872,10 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
               call mpp_update_domains(wrk2(:,:,:), Dom%domain2D)
               call mpp_update_domains(wrk3(:,:,:), Dom%domain2D)
               if (id_prog_dx(n) > 0) then
-                 diagnose_3d(Time, Grd, id_prog_dx(n), wrk2(:,:,:))
+                 call diagnose_3d(Time, Grd, id_prog_dx(n), wrk2(:,:,:))
               endif
               if (id_prog_dy(n) > 0) then
-                 diagnose_3d(Time, Grd, id_prog_dy(n), wrk3(:,:,:))
+                 call diagnose_3d(Time, Grd, id_prog_dy(n), wrk3(:,:,:))
               endif
            endif
 
