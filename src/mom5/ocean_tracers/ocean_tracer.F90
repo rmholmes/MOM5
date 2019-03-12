@@ -2201,7 +2201,7 @@ end function ocean_diag_tracer_init  !}
 ! </DESCRIPTION>
 !
 subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
-                                T_prog, T_diag, L_system,   &
+                                T_prog, T_diag, Domain, L_system,   &
                                 Velocity, Ext_mode, EL_diag, use_blobs)
 
   type(ocean_time_type),          intent(in)    :: Time 
@@ -2213,6 +2213,7 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
 
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_diag_tracer_type),   intent(inout) :: T_diag(:)
+  type(ocean_domain_type),        intent(in), target   :: Domain
   type(ocean_lagrangian_type),    intent(inout) :: L_system
   type(ocean_velocity_type),      intent(in)    :: Velocity
   type(ocean_external_mode_type), intent(in)    :: Ext_mode
@@ -3830,7 +3831,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_diag_tracer_type),   intent(in)    :: T_diag(:)
-  type(ocean_domain_type),        intent(in)    :: Domain
+  type(ocean_domain_type), target,intent(in)    :: Domain
   type(ocean_thickness_type),     intent(in)    :: Thickness
   type(ocean_density_type),       intent(in)    :: Dens
   logical,                        intent(in)    :: use_blobs 
