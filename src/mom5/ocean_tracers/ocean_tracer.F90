@@ -2516,7 +2516,7 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
 
 
   ! send some tracer diagnostics at time tau 
-  call send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_blobs)
+  call send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens, use_blobs)
 
   ! compute watermass diagnostics 
   call watermass_diag(Time, T_prog, T_diag, Dens, Thickness, pme)
@@ -3825,11 +3825,12 @@ end subroutine ocean_tracer_diagnostics_init
 ! 
 ! </DESCRIPTION>
 !
-subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_blobs)
+subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens, use_blobs)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_diag_tracer_type),   intent(in)    :: T_diag(:)
+  type(ocean_domain_type),        intent(in)    :: Domain
   type(ocean_thickness_type),     intent(in)    :: Thickness
   type(ocean_density_type),       intent(in)    :: Dens
   logical,                        intent(in)    :: use_blobs 
@@ -3841,6 +3842,8 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
   taum1 = Time%taum1
   tau   = Time%tau
   taup1 = Time%taup1
+
+  Dom => Domain
 
   do n=1,num_prog_tracers
 
@@ -3866,6 +3869,8 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
                  wrk3(:,:,k) = FDY_T(wrk1(:,:,k))
               enddo
 
+              call mpp_update_domains(wrk2(:,:,:), Dom%domain2D)
+              call mpp_update_domains(wrk3(:,:,:), Dom%domain2D)
               if (id_prog_dx_on_nrho(n) > 0) then
                  call diagnose_3d_rho(Time, Dens, id_prog_dx_on_nrho(n), wrk2(:,:,:),1)
               endif
