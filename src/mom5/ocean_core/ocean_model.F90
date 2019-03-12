@@ -1841,7 +1841,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
        ! update to time=taup1 the value of tracer concentrations
        call mpp_clock_begin(id_tracer)
        call update_ocean_tracer(Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
-            T_prog(1:num_prog_tracers), T_diag(1:num_diag_tracers), Lagrangian_system, Velocity,       &
+            T_prog(1:num_prog_tracers), T_diag(1:num_diag_tracers), Domain, Lagrangian_system, Velocity,       &
             Ext_mode, EL_diag(:), use_blobs)
        call mpp_clock_end(id_tracer)
 
