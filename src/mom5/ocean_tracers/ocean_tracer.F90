@@ -3862,6 +3862,8 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
            endif
            
            if (id_prog_dxsq(n) > 0 .or. id_prog_dysq(n) > 0) then
+              call mpp_update_domains(wrk1(:,:,:), Dom%domain2D)
+
               wrk2(:,:,:) = 0.0
               wrk3(:,:,:) = 0.0
               do k=1,nk
@@ -3869,8 +3871,6 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Domain, Thickness, Dens
                  wrk3(:,:,k) = FDY_T(wrk1(:,:,k))
               enddo
 
-              call mpp_update_domains(wrk2(:,:,:), Dom%domain2D)
-              call mpp_update_domains(wrk3(:,:,:), Dom%domain2D)
               if (id_prog_dxsq(n) > 0) then
                  call diagnose_3d(Time, Grd, id_prog_dxsq(n), wrk2(:,:,:)*wrk2(:,:,:))
               endif
