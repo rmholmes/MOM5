@@ -200,6 +200,7 @@ private
 
 ! for diagnostics 
 integer :: id_u(2)              =-1
+integer :: id_u_sq(2)           =-1
 integer :: id_u_on_depth(2)     =-1
 integer :: id_usurf(2)          =-1
 integer :: id_ubott(2)          =-1
@@ -448,6 +449,13 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
   id_u(2)    = register_diag_field ('ocean_model', 'v', Grd%vel_axes_v(1:3), Time%model_time, &
      'j-current', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/),                 &
      standard_name='sea_water_y_velocity')
+
+  id_u_sq(1)    = register_diag_field ('ocean_model', 'u_sq', Grd%vel_axes_u(1:3), Time%model_time, &
+     'i-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/),                 &
+     standard_name='sea_water_x_velocity_sq')
+  id_u_sq(2)    = register_diag_field ('ocean_model', 'v_sq', Grd%vel_axes_v(1:3), Time%model_time, &
+     'j-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/),                 &
+     standard_name='sea_water_y_velocity_sq')
 
   id_u_on_depth(1) = register_diag_field ('ocean_model', 'u_on_depth', Grd%vel_axes_u_depth(1:3), Time%model_time, &
      'i-current mapped to depth surface', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
@@ -1352,6 +1360,12 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   ! send diagnostics to diagnostics manager 
   call diagnose_3d_u(Time, Grd, id_u(1), Velocity%u(:,:,:,1,tau))
   call diagnose_3d_u(Time, Grd, id_u(2), Velocity%u(:,:,:,2,tau))
+  if (id_u_sq(1) > 0) then
+     call diagnose_3d_u(Time, Grd, id_u_sq(1), Velocity%u(:,:,:,1,tau)*Velocity%u(:,:,:,1,tau))
+  endif
+  if (id_u_sq(2) > 0) then
+     call diagnose_3d_u(Time, Grd, id_u_sq(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau))
+  endif
 
   call diagnose_2d_u(Time, Grd, id_usurf(1), Velocity%u(:,:,1,1,tau))
   call diagnose_2d_u(Time, Grd, id_usurf(2), Velocity%u(:,:,1,2,tau))
