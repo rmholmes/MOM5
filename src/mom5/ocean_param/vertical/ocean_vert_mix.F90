@@ -1362,8 +1362,8 @@ ierr = check_nml_error(io_status,'ocean_vert_mix_nml')
                      standard_name='ocean_vertical_heat_diffusivity')
   id_diff_cbt_t_on_nrho = -1
   id_diff_cbt_t_on_nrho = register_diag_field ('ocean_model', 'diff_cbt_t_on_nrho', Dens%neutralrho_axes(1:3), &
-                     Time%model_time, 'total vert diff_cbt(temp) (w/o neutral included) binned to neutral density', &
-                     'm^2/s',missing_value=missing_value, range=(/-10.0,1e6/))
+                     Time%model_time, 'total vert diff_cbt(temp) (w/o neutral included) * layer thickness binned to neutral density', &
+                     'm^3/s',missing_value=missing_value, range=(/-10.0,1e6/))
 
   id_diff_cbt_s = -1
   id_diff_cbt_s    = register_diag_field ('ocean_model', 'diff_cbt_s', Grid%tracer_axes(1:3), &
@@ -3349,8 +3349,8 @@ subroutine vert_mix_coeff(Time, Thickness, Velocity, T_prog,   &
 
   call diagnose_3d(Time, Grd, id_diff_cbt_t, diff_cbt(:,:,:,1))
   call diagnose_3d(Time, Grd, id_diff_cbt_s, diff_cbt(:,:,:,2))
-  call diagnose_3d_rho(Time, Dens, id_diff_cbt_t_on_nrho, diff_cbt(:,:,:,1))
-  call diagnose_3d_rho(Time, Dens, id_diff_cbt_s_on_nrho, diff_cbt(:,:,:,2))
+  call diagnose_3d_rho(Time, Dens, id_diff_cbt_t_on_nrho, diff_cbt(:,:,:,1)*Thickness%dzt(:,:,:)*Grd%tmask(:,:,:))
+  call diagnose_3d_rho(Time, Dens, id_diff_cbt_s_on_nrho, diff_cbt(:,:,:,2)*Thickness%dzt(:,:,:)*Grd%tmask(:,:,:))
   call diagnose_3d_u(Time, Grd, id_visc_cbu_diabatic, visc_cbu(:,:,:))
   call diagnose_3d(Time, Grd, id_visc_cbt_diabatic, visc_cbt(:,:,:))
 
