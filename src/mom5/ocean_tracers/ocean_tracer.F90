@@ -271,7 +271,7 @@ integer :: vert_coordinate_class
 ! for setting the temperature variable
 integer :: prog_temp_variable=0
 
-! for CMIP units (deg K rather than degC)
+! for CMIP units (K rather than degrees C if cmip_version<=5)
 real :: cmip_offset = 0.0
 character(len=32) :: temp_units='degrees C' 
 
@@ -522,7 +522,7 @@ contains
 ! </DESCRIPTION>
 !
 function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, Time_steps, &
-                                 num_prog, vert_coordinate_type, obc, cmip_units, use_blobs, debug)   &
+                                 num_prog, vert_coordinate_type, obc, cmip_units, cmip_version, use_blobs, debug)   &
                                  result (T_prog)  
   
   type(ocean_grid_type),       intent(in), target   :: Grid
@@ -535,6 +535,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   integer,                     intent(in)           :: vert_coordinate_type 
   logical,                     intent(in)           :: obc
   logical,                     intent(in)           :: cmip_units
+  integer,                     intent(in)           :: cmip_version
   logical,                     intent(in)           :: use_blobs
   logical,                     intent(in), optional :: debug
 
@@ -606,12 +607,12 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
     write(stdoutunit,'(a)') '==>Note: running with debug_this_module=.true. so will print lots of checksums.'  
   endif 
 
-  if(cmip_units) then 
+  if(cmip_units .and. cmip_version <= 5) then 
       cmip_offset = kelvin
-      temp_units='degrees K' 
+      temp_units = 'K' 
   else
       cmip_offset = 0.0  
-      temp_units='degrees C' 
+      temp_units = 'degrees C' 
   endif
 
   if(zero_tendency) then 
@@ -1239,7 +1240,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
        id_prog(n) = register_diag_field ('ocean_model',      &
             trim(prog_name),                                 &
             Grd%tracer_axes(1:3),                            &
-            Time%model_time, prog_longname,                  &
+            Time%model_time, trim(prog_longname),                  &
             trim(temp_units),                                &
             missing_value=missing_value, range=range_array,  &
             standard_name='sea_water_potential_temperature')
@@ -1276,10 +1277,35 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
        id_surf_tracer_sq(n) = register_diag_field ('ocean_model', &
             'squared_surface_'//trim(prog_name),                  &
             Grd%tracer_axes(1:2),                                 &
-            Time%model_time, 'squared '//trim(T_prog(n)%name),    &
+            Time%model_time, 'squared '//trim(prog_longname),    &
             'squared '//trim(temp_units),                         &
             missing_value=missing_value, range=(/0.0,1e10/),      &
             standard_name='square_of_sea_surface_temperature')
+
+   elseif(T_prog(n)%longname=='Conservative temperature') then
+     id_prog(n) = register_diag_field ('ocean_model',      &
+          trim(prog_name),                                 &
+          Grd%tracer_axes(1:3),                            &
+          Time%model_time, trim(prog_longname),                  &
+          trim(temp_units),                                &
+          missing_value=missing_value, range=range_array,  &
+          standard_name='sea_water_conservative_temperature')
+
+     id_surf_tracer(n) = register_diag_field ('ocean_model', &
+          'surface_'//trim(prog_name),                       &
+          Grd%tracer_axes(1:2),                              &
+          Time%model_time, trim(prog_longname),              &
+          trim(temp_units),                                  &
+          missing_value=missing_value, range=range_array,    &
+          standard_name='sea_surface_conservative_temperature')
+
+     id_surf_tracer_sq(n) = register_diag_field ('ocean_model', &
+          'squared_surface_'//trim(prog_name),                  &
+          Grd%tracer_axes(1:2),                                 &
+          Time%model_time, 'squared '//trim(prog_longname),    &
+          'squared '//trim(temp_units),                         &
+          missing_value=missing_value, range=(/0.0,1e10/),      &
+          standard_name='square_of_sea_surface_conservative_temperature')
 
    elseif(T_prog(n)%name=='salt') then 
        id_prog(n) = register_diag_field ('ocean_model',     &
@@ -1483,6 +1509,23 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
                  missing_value=missing_value, range=range_array,     &
                  standard_name='sea_surface_temperature')
 
+        elseif(T_prog(n)%longname=='Conservative temperature') then
+            id_progT(n) = register_diag_field ('ocean_model',      &
+                 trim(T_prog(n)%name),                                 &
+                 Grd%tracer_axes(1:3),                            &
+                 Time%model_time, trim(T_prog(n)%longname),       &
+                 trim(temp_units),                                &
+                 missing_value=missing_value, range=range_array,  &
+                 standard_name='sea_water_conservative_temperature')
+   
+            id_surf_tracerT(n) = register_diag_field ('ocean_model', &
+                 'surface_'//trim(T_prog(n)%name),                   &
+                 Grd%tracer_axes(1:2),                              &
+                 Time%model_time, trim(T_prog(n)%longname),          &
+                 trim(temp_units),                                  &
+                 missing_value=missing_value, range=range_array,    &
+                 standard_name='sea_surface_conservative_temperature')
+
         elseif(T_prog(n)%name=='salt') then 
             id_progT(n) = register_diag_field ('ocean_model',    &
                  trim(T_prog(n)%name),                           &
@@ -1499,6 +1542,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
                  trim(T_prog(n)%units),                              &
                  missing_value=missing_value, range=range_array,     &
                  standard_name='sea_surface_salinity')
+
         elseif(T_prog(n)%name=='age_global') then 
             id_progT(n) = register_diag_field ('ocean_model',         &
                  trim(T_prog(n)%name),                                &
