@@ -1433,6 +1433,7 @@ CONTAINS
     INTEGER   :: hi, hj, twohi, twohj  ! halo size in x and y direction
     INTEGER :: sample ! index along the diurnal time axis
     INTEGER :: day,second,tick ! components of the current date
+    INTEGER :: dayi,secondi,ticki ! components of the date for the previous output.
     INTEGER :: status
     INTEGER :: numthreads
     INTEGER :: active_omp_level
@@ -1693,7 +1694,9 @@ CONTAINS
        ! Add option to do rising-weighted average
        time_risavg = output_fields(out_num)%time_risavg
        IF (time_risavg) THEN
-          weight1 = time-output_fields(out_num)%last_output
+          CALL get_time(time,second,day,tick) ! current date
+          CALL get_time(output_fields(out_num)%last_output,secondi,dayi,ticki)
+          weight1 = (second+day*86400.0)-(secondi+dayi*86400.0)
        END IF
 
        ! compute the diurnal index
@@ -2990,10 +2993,6 @@ CONTAINS
        b2=SIZE(output_fields(out_num)%buffer,2)
        b3=SIZE(output_fields(out_num)%buffer,3)
        b4=SIZE(output_fields(out_num)%buffer,4)
-       IF ( time_risavg ) THEN
-          output_fields(out_num)%counter(i,j,k,m) = &
-               2.0/(output_fields(out_num)%counter(i,j,k,m)+1.0)
-       END IF ! Note - must divide by DELTAT in post-processing
        IF ( input_fields(in_num)%mask_variant ) THEN
           DO m=1, b4
              DO k=1, b3
@@ -3004,6 +3003,8 @@ CONTAINS
                               & output_fields(out_num)%buffer(i,j,k,m)/output_fields(out_num)%counter(i,j,k,m)
                          IF ( time_rms ) output_fields(out_num)%buffer(i,j,k,m) = &
                               SQRT(output_fields(out_num)%buffer(i,j,k,m))
+                         IF ( time_risavg ) output_fields(out_num)%buffer(i,j,k,m) = &
+                              output_fields(out_num)%buffer(i,j,k,m)/2.
                       ELSE
                          output_fields(out_num)%buffer(i,j,k,m) =  missvalue
                       END IF
