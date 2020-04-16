@@ -1442,7 +1442,7 @@ CONTAINS
 #endif
     LOGICAL :: average, phys_window, need_compute
     LOGICAL :: reduced_k_range, local_output
-    LOGICAL :: time_max, time_min, time_rms
+    LOGICAL :: time_max, time_min, time_rms, time_risavg
     LOGICAL :: missvalue_present
     LOGICAL, ALLOCATABLE, DIMENSION(:,:,:) :: oor_mask
     CHARACTER(len=256) :: err_msg_local
@@ -1688,6 +1688,12 @@ CONTAINS
        IF ( need_compute ) THEN
           l_start = output_fields(out_num)%output_grid%l_start_indx
           l_end = output_fields(out_num)%output_grid%l_end_indx
+       END IF
+
+       ! Add option to do rising-weighted average
+       time_risavg = output_fields(out_num)%time_risavg
+       IF (time_risavg) THEN
+          weight1 = time-output_fields(out_num)%last_output
        END IF
 
        ! compute the diurnal index
@@ -2948,7 +2954,7 @@ CONTAINS
 
     TYPE(time_type) :: middle_time
     LOGICAL :: time_max, time_min, reduced_k_range, missvalue_present
-    LOGICAL :: average, time_rms, need_compute, phys_window
+    LOGICAL :: average, time_rms, need_compute, phys_window, time_risavg
     INTEGER :: in_num, file_num, freq, units
     INTEGER :: b1,b2,b3,b4 ! size of buffer along x,y,z,and diurnal axes
     INTEGER :: i, j, k, m
@@ -2976,6 +2982,7 @@ CONTAINS
     file_num = output_fields(out_num)%output_file
     freq = files(file_num)%output_freq
     units = files(file_num)%output_units
+    time_risavg = output_fields(out_num)%time_risavg
 
     ! If average get size: Average intervals are last_output, next_output
     IF ( average ) THEN
@@ -2983,6 +2990,10 @@ CONTAINS
        b2=SIZE(output_fields(out_num)%buffer,2)
        b3=SIZE(output_fields(out_num)%buffer,3)
        b4=SIZE(output_fields(out_num)%buffer,4)
+       IF ( time_risavg ) THEN
+          output_fields(out_num)%counter(i,j,k,m) = &
+               2.0/(output_fields(out_num)%counter(i,j,k,m)+1.0)
+       END IF ! Note - must divide by DELTAT in post-processing
        IF ( input_fields(in_num)%mask_variant ) THEN
           DO m=1, b4
              DO k=1, b3
