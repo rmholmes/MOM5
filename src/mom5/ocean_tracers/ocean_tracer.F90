@@ -1291,6 +1291,27 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
           missing_value=missing_value, range=range_array,  &
           standard_name='sea_water_conservative_temperature')
 
+     id_prog_dxsq(n) = register_diag_field ('ocean_model',   &
+          trim(prog_name)//'_dxsq',                          &
+          Grd%tracer_axes_flux_x(1:3),                       &
+          Time%model_time, trim(prog_longname)//' grid-dxsq',&
+          trim(temp_units),                                  &
+          missing_value=missing_value, range=range_array)
+
+     id_prog_dysq(n) = register_diag_field ('ocean_model',   &
+          trim(prog_name)//'_dysq',                          &
+          Grd%tracer_axes_flux_y(1:3),                       &
+          Time%model_time, trim(prog_longname)//' grid-dysq',&
+          trim(temp_units),                                  &
+          missing_value=missing_value, range=range_array)
+
+     id_prog_dzsq(n) = register_diag_field ('ocean_model',   &
+          trim(prog_name)//'_dzsq',                          &
+          Grd%tracer_axes_wt(1:3),                           &
+          Time%model_time, trim(prog_longname)//' grid-dzsq',&
+          trim(temp_units),                                  &
+          missing_value=missing_value, range=range_array)
+
      id_surf_tracer(n) = register_diag_field ('ocean_model', &
           'surface_'//trim(prog_name),                       &
           Grd%tracer_axes(1:2),                              &
