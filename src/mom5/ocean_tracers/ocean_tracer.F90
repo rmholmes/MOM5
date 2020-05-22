@@ -1250,21 +1250,21 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
             Grd%tracer_axes_flux_x(1:3),                     &
             Time%model_time, trim(prog_longname)//' grid-dxsq',&
             trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_prog_dysq(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dysq',                          &
             Grd%tracer_axes_flux_y(1:3),                     &
             Time%model_time, trim(prog_longname)//' grid-dysq',&
             trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_prog_dzsq(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dzsq',                          &
             Grd%tracer_axes_wt(1:3),                         &
             Time%model_time, trim(prog_longname)//' grid-dzsq',&
             trim(temp_units),                                &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_surf_tracer(n) = register_diag_field ('ocean_model', &
             'surface_'//trim(prog_name),                       &
@@ -1296,21 +1296,21 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
           Grd%tracer_axes_flux_x(1:3),                       &
           Time%model_time, trim(prog_longname)//' grid-dxsq',&
           trim(temp_units),                                  &
-          missing_value=missing_value, range=range_array)
+          missing_value=missing_value, range=(/0.0,1e10/))
 
      id_prog_dysq(n) = register_diag_field ('ocean_model',   &
           trim(prog_name)//'_dysq',                          &
           Grd%tracer_axes_flux_y(1:3),                       &
           Time%model_time, trim(prog_longname)//' grid-dysq',&
           trim(temp_units),                                  &
-          missing_value=missing_value, range=range_array)
+          missing_value=missing_value, range=(/0.0,1e10/))
 
      id_prog_dzsq(n) = register_diag_field ('ocean_model',   &
           trim(prog_name)//'_dzsq',                          &
           Grd%tracer_axes_wt(1:3),                           &
           Time%model_time, trim(prog_longname)//' grid-dzsq',&
           trim(temp_units),                                  &
-          missing_value=missing_value, range=range_array)
+          missing_value=missing_value, range=(/0.0,1e10/))
 
      id_surf_tracer(n) = register_diag_field ('ocean_model', &
           'surface_'//trim(prog_name),                       &
@@ -1411,21 +1411,21 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
             Grd%tracer_axes_flux_x(1:3),                       &
             Time%model_time, trim(prog_longname)//' grid-dxsq',&
             trim(T_prog(n)%units),                             &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_prog_dysq(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dysq',                          &
             Grd%tracer_axes_flux_y(1:3),                     &
             Time%model_time, trim(prog_longname)//' grid-dysq',&
             trim(T_prog(n)%units),                             &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_prog_dzsq(n) = register_diag_field ('ocean_model',   &
             trim(prog_name)//'_dzsq',                          &
             Grd%tracer_axes_wt(1:3),                         &
             Time%model_time, trim(prog_longname)//' grid-dzsq',&
             trim(T_prog(n)%units),                             &
-            missing_value=missing_value, range=range_array)
+            missing_value=missing_value, range=(/0.0,1e10/))
 
        id_surf_tracer(n) = register_diag_field ('ocean_model', &
             'surface_'//trim(prog_name),                       &
