@@ -241,7 +241,7 @@ use ocean_parameters_mod, only: missing_value, oneeigth, omega_earth, rho0, rho0
 use ocean_types_mod,      only: ocean_time_type, ocean_grid_type, ocean_domain_type, ocean_adv_vel_type
 use ocean_types_mod,      only: ocean_thickness_type, ocean_velocity_type, ocean_options_type
 use ocean_util_mod,       only: write_timestamp, diagnose_3d_u, diagnose_2d_u, diagnose_2d, write_chksum_3d
-use ocean_workspace_mod,  only: wrk1, wrk2, wrk1_v, wrk2_v, wrk3_v, wrk1_v2d
+use ocean_workspace_mod,  only: wrk1, wrk2, wrk3, wrk1_v, wrk2_v, wrk3_v, wrk1_v2d
 
 implicit none
 
@@ -326,6 +326,7 @@ integer :: id_bih_plus_side_fric_u =-1
 integer :: id_bih_plus_side_fric_v =-1
 integer :: id_side_drag_friction_u =-1
 integer :: id_side_drag_friction_v =-1
+integer :: id_rey_bih              =-1
 
 ! time step 
 real ::  dtime = 0.0  ! time step used for friction tendency (2*dtuv if threelevel, dtuv if twolevel) 
@@ -883,6 +884,9 @@ ierr = check_nml_error(io_status,'ocean_bihgen_friction_nml')
   id_bih_plus_side_fric_v = register_diag_field ('ocean_model', 'bih_plus_side_fric_v', Grd%vel_axes_uv(1:3), &
                   Time%model_time, 'Thickness and rho wghtd horz bih frict + side friction on v-merid',       &
                   '(kg/m^3)*(m^2/s^2)', missing_value=missing_value, range=(/-1.e20,1.e20/))
+  id_rey_bih   = register_diag_field ('ocean_model', 'rey_bih', Grd%vel_axes_uv(1:3), &
+               Time%model_time,'U-cell biharmonic grid Reynolds number', 'dimensionless',   &
+               missing_value=-10.0, range=(/-10.0,1.e20/))
 
 end subroutine ocean_bihgen_friction_init
 ! </SUBROUTINE>  NAME="ocean_bihgen_friction_init"
@@ -991,6 +995,7 @@ subroutine bihgen_friction(Time, Thickness, Adv_vel, Velocity, bih_viscosity, en
   wrk3_v(:,:,:,:)  = 0.0
   wrk1(:,:,:)      = 0.0
   wrk2(:,:,:)      = 0.0
+  wrk3(:,:,:)      = 0.0
 
   taum1 = Time%taum1
   tau   = Time%tau
@@ -1381,6 +1386,21 @@ subroutine bihgen_friction(Time, Thickness, Adv_vel, Velocity, bih_viscosity, en
       call diagnose_3d_u(Time, Grd, id_aiso, aiso(:,:,:))
       call diagnose_3d_u(Time, Grd, id_visc_diverge, visc_diverge(:,:,:))
       call diagnose_3d_u(Time, Grd, id_aaniso, wrk1(:,:,:))
+
+      if (id_rey_bih) then
+          do k=1,nk
+             do j=jsd,jed
+                do i=isd,ied
+                   wrk3(i,j,k) = sqrt((Velocity%u(i,j,k,1,taum1)**2                        &
+                                     + Velocity%u(i,j,k,2,taum1)**2)/2.0)
+                   wrk3(i,j,k) = wrk3(i,j,k)*((2.0*(Grd%dxu(i,j)**2)*(Grd%dyu(i,j)**2))    &
+                                  /(epsln + Grd%dxu(i,j)**2 + Grd%dyu(i,j)**2))**(3.0/2.0)
+                   wrk3(i,j,k) = wrk3(i,j,k)/(aiso(i,j,k) + espln)
+                enddo
+             enddo
+          enddo
+          call diagnose_3d_u(Time, Grd, id_rey_bih,  wrk3(:,:,:))
+       endif
 
       if (id_along > 0)  call diagnose_3d_u(Time, Grd, id_along,  aiso(:,:,:)+0.5*wrk1(:,:,:))
       if (id_across > 0) call diagnose_3d_u(Time, Grd, id_across, aiso(:,:,:)-0.5*wrk1(:,:,:))
