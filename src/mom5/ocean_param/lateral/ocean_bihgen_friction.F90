@@ -1395,7 +1395,7 @@ subroutine bihgen_friction(Time, Thickness, Adv_vel, Velocity, bih_viscosity, en
                                      + Velocity%u(i,j,k,2,taum1)**2)/2.0)
                    wrk3(i,j,k) = wrk3(i,j,k)*((2.0*(Grd%dxu(i,j)**2)*(Grd%dyu(i,j)**2))    &
                                   /(epsln + Grd%dxu(i,j)**2 + Grd%dyu(i,j)**2))**(3.0/2.0)
-                   wrk3(i,j,k) = wrk3(i,j,k)/(aiso(i,j,k) + espln)
+                   wrk3(i,j,k) = wrk3(i,j,k)/(aiso(i,j,k) + epsln)
                 enddo
              enddo
           enddo
