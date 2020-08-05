@@ -176,7 +176,7 @@ use ocean_form_drag_mod,       only: form_drag_accel
 use ocean_lap_friction_mod,    only: lap_friction
 use ocean_momentum_source_mod, only: momentum_source
 use ocean_obc_mod,             only: ocean_obc_update_boundary
-use ocean_operators_mod,       only: DIV_UD
+use ocean_operators_mod,       only: DIV_UD, FDX_U, FDY_U
 use ocean_parameters_mod,      only: TWO_LEVEL, THREE_LEVEL, DEPTH_BASED
 use ocean_parameters_mod,      only: missing_value, rho0r, grav, onehalf 
 use ocean_parameters_mod,      only: MOM_BGRID, MOM_CGRID 
@@ -192,7 +192,7 @@ use ocean_velocity_advect_mod, only: horz_advection_of_velocity, vert_advection_
 use ocean_velocity_diag_mod,   only: kinetic_energy, potential_energy 
 use ocean_vert_mix_mod,        only: vert_friction_bgrid, vert_friction_implicit_bgrid
 use ocean_vert_mix_mod,        only: vert_friction_cgrid, vert_friction_implicit_cgrid
-use ocean_workspace_mod,       only: wrk1, wrk2, wrk3, wrk1_v  
+use ocean_workspace_mod,       only: wrk1, wrk2, wrk3, wrk1_v, wrk2_v
 
 implicit none
 
@@ -200,6 +200,8 @@ private
 
 ! for diagnostics 
 integer :: id_u(2)              =-1
+integer :: id_u_dxsq(2)           =-1
+integer :: id_u_dysq(2)           =-1
 integer :: id_u_sq(2)           =-1
 integer :: id_u_on_depth(2)     =-1
 integer :: id_usurf(2)          =-1
@@ -451,6 +453,16 @@ subroutine ocean_velocity_init (Grid, Domain, Time, Time_steps, Ocean_options, &
   id_u(2)    = register_diag_field ('ocean_model', 'v', Grd%vel_axes_v(1:3), Time%model_time, &
      'j-current', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/),                 &
      standard_name='sea_water_y_velocity')
+
+  id_u_dxsq(1)    = register_diag_field ('ocean_model', 'u_dxsq', Grd%vel_axes_flux_y(1:3), Time%model_time, &
+     'i-current grid-dxsq', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+  id_u_dxsq(2)    = register_diag_field ('ocean_model', 'v_dxsq', Grd%vel_axes_flux_y(1:3), Time%model_time, &
+     'j-current grid-dxsq', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+
+  id_u_dysq(1)    = register_diag_field ('ocean_model', 'u_dysq', Grd%vel_axes_flux_x(1:3), Time%model_time, &
+     'i-current grid-dysq', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
+  id_u_dysq(2)    = register_diag_field ('ocean_model', 'v_dysq', Grd%vel_axes_flux_x(1:3), Time%model_time, &
+     'j-current grid-dysq', 'm/sec', missing_value=missing_value, range=(/-10.0,10.0/))
 
   id_u_sq(1)    = register_diag_field ('ocean_model', 'u_sq', Grd%vel_axes_u(1:3), Time%model_time, &
      'i-current squared', 'm/sec', missing_value=missing_value, range=(/-100.0,100.0/),                 &
@@ -1367,6 +1379,36 @@ subroutine update_ocean_velocity_bgrid(Time, Thickness, barotropic_split, &
   endif
   if (id_u_sq(2) > 0) then
      call diagnose_3d_u(Time, Grd, id_u_sq(2), Velocity%u(:,:,:,2,tau)*Velocity%u(:,:,:,2,tau))
+  endif
+
+  if (id_u_dxsq(1) > 0 .or. id_u_dxsq(2) > 0) then
+     wrk1_v(:,:,:,:) = 0.0
+     do k=1,nk
+        wrk1_v(:,:,k,1) = FDX_U(Velocity%u(:,:,k,1,tau))
+        wrk1_v(:,:,k,2) = FDX_U(Velocity%u(:,:,k,2,tau))
+     enddo
+
+     if (id_u_dxsq(1) > 0) then
+        call diagnose_3d_u(Time, Grd, id_u_dxsq(1), wrk1_v(:,:,:,1)*wrk1_v(:,:,:,1))
+     endif
+     if (id_u_dxsq(2) > 0) then
+        call diagnose_3d_u(Time, Grd, id_u_dxsq(2), wrk1_v(:,:,:,2)*wrk1_v(:,:,:,2))
+     endif
+  endif
+
+  if (id_u_dysq(1) > 0 .or. id_u_dysq(2) > 0) then
+     wrk2_v(:,:,:,:) = 0.0
+     do k=1,nk
+        wrk2_v(:,:,k,1) = FDY_U(Velocity%u(:,:,k,1,tau))
+        wrk2_v(:,:,k,2) = FDY_U(Velocity%u(:,:,k,2,tau))
+     enddo
+
+     if (id_u_dysq(1) > 0) then
+        call diagnose_3d_u(Time, Grd, id_u_dysq(1), wrk2_v(:,:,:,1)*wrk2_v(:,:,:,1))
+     endif
+     if (id_u_dysq(2) > 0) then
+        call diagnose_3d_u(Time, Grd, id_u_dysq(2), wrk2_v(:,:,:,2)*wrk2_v(:,:,:,2))
+     endif
   endif
 
   call diagnose_2d_u(Time, Grd, id_usurf(1), Velocity%u(:,:,1,1,tau))
