@@ -1467,6 +1467,7 @@ CONTAINS
     method_selected = 0
     output_fields(out_num)%time_average = .FALSE.
     output_fields(out_num)%time_rms = .FALSE.
+    output_fields(out_num)%fwd_risavg = .FALSE.
     output_fields(out_num)%time_min = .FALSE.
     output_fields(out_num)%time_max = .FALSE.
     output_fields(out_num)%time_ops = .FALSE.
@@ -1541,6 +1542,11 @@ CONTAINS
                & output_fields(out_num)%output_name = TRIM(output_name)//'_min'
           method_selected = method_selected+1
           t_method = 'min'
+        CASE ( 'fwd_risavg' )
+          output_fields(out_num)%time_average = .TRUE.
+          output_fields(out_num)%fwd_risavg  = .TRUE.
+          method_selected = method_selected+1
+          t_method = 'rising_average'
        END SELECT
     END IF
 
