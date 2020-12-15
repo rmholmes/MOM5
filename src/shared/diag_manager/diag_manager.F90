@@ -1433,6 +1433,7 @@ CONTAINS
     INTEGER   :: hi, hj, twohi, twohj  ! halo size in x and y direction
     INTEGER :: sample ! index along the diurnal time axis
     INTEGER :: day,second,tick ! components of the current date
+    INTEGER :: day_next,second_next,tick_next ! components of the next output date
     INTEGER :: status
     INTEGER :: numthreads
     INTEGER :: active_omp_level
@@ -1693,8 +1694,10 @@ CONTAINS
        ! compute the forward rising average weight from 0 to 1
        fwd_risavg = output_fields(out_num)%fwd_risavg
        IF (fwd_risavg) THEN
+         CALL get_time(time,second,day)
+         CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           ! weight1 = time-output_fields(out_num)%last_output
-          weight1 = output_fields(out_num)%next_output - time
+          weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
        END IF
 
        ! compute the diurnal index
