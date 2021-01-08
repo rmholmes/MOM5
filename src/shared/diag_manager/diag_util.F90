@@ -1542,7 +1542,7 @@ CONTAINS
                & output_fields(out_num)%output_name = TRIM(output_name)//'_min'
           method_selected = method_selected+1
           t_method = 'min'
-        CASE ( 'fwd_risavg' )
+        CASE ( 'fwdrisavg' )
           output_fields(out_num)%time_average = .TRUE.
           output_fields(out_num)%fwd_risavg  = .TRUE.
           method_selected = method_selected+1
