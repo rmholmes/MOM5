@@ -1546,7 +1546,7 @@ CONTAINS
           output_fields(out_num)%time_average = .TRUE.
           output_fields(out_num)%fwd_risavg  = .TRUE.
           method_selected = method_selected+1
-          write (*,*) 'method_selected value: ', method_select
+          write (*,*) 'method_selected value: ', method_selected
           t_method = 'rising_average'
        END SELECT
     END IF
