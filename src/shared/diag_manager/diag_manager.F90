@@ -1698,6 +1698,8 @@ CONTAINS
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
+          write(*,*) 'next output time:', second_next+day_next*60.0*60.0*24.0, &
+                      'current time:', second+day*60.0*60.0*24.0
        END IF
 
        ! compute the diurnal index
@@ -1791,6 +1793,7 @@ CONTAINS
 
        ! Take care of submitted field data
        IF ( average ) THEN
+          write(*,*) '! average used for diagnostic'
           IF ( input_fields(diag_field_id)%mask_variant ) THEN
              IF ( need_compute ) THEN
                 WRITE (error_string,'(a,"/",a)')  &
@@ -1806,6 +1809,7 @@ CONTAINS
              ! Should reduced_k_range data be supported with the mask_variant option   ?????
              ! If not, error message should be produced and the reduced_k_range loop below eliminated
              IF ( PRESENT(mask) ) THEN
+               write(*,*) '! mask present'
                 IF ( missvalue_present ) THEN
                    IF ( debug_diag_manager ) THEN
                       CALL update_bounds(out_num, is-hi, ie-hi, js-hj, je-hj, ks, ke)
@@ -1836,6 +1840,7 @@ CONTAINS
                                      IF (fwd_risavg) THEN
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                       write(*,*) 'fwd_risavg code, reduced k, numthreads>1 .AND. phys_window'
                                      ELSE
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
@@ -1861,6 +1866,7 @@ CONTAINS
                                      IF (fwd_risavg) THEN
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                        write(*,*) 'fwd_risavg code not reduced k range, numthreads > 1 AND phys_window'
                                      ELSE
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
@@ -1890,6 +1896,7 @@ CONTAINS
                                      IF (fwd_risavg) THEN
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                        write(*,*) 'fwd_risavg code reduced k range'
                                      ELSE
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
@@ -1915,6 +1922,7 @@ CONTAINS
                                      IF (fwd_risavg) THEN
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                       write(*,*) 'fwd_risavg code not reduced k range'
                                      ELSE
                                        output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
                                             &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
