@@ -1795,6 +1795,7 @@ CONTAINS
        IF ( average ) THEN
           write(*,*) '! average used for diagnostic'
           IF ( input_fields(diag_field_id)%mask_variant ) THEN
+             write(*,*) '! input_fields(diag_field_id)%mask_variant'
              IF ( need_compute ) THEN
                 WRITE (error_string,'(a,"/",a)')  &
                      & TRIM(input_fields(diag_field_id)%module_name), &
@@ -1809,7 +1810,6 @@ CONTAINS
              ! Should reduced_k_range data be supported with the mask_variant option   ?????
              ! If not, error message should be produced and the reduced_k_range loop below eliminated
              IF ( PRESENT(mask) ) THEN
-               write(*,*) '! mask present'
                 IF ( missvalue_present ) THEN
                    IF ( debug_diag_manager ) THEN
                       CALL update_bounds(out_num, is-hi, ie-hi, js-hj, je-hj, ks, ke)
@@ -1955,6 +1955,7 @@ CONTAINS
                 END IF
              END IF
           ELSE ! mask_variant=false
+            write(*,*) '! NOT input_fields(diag_field_id)%mask_variant'
              IF ( PRESENT(mask) ) THEN
                 IF ( missvalue_present ) THEN
                    IF ( need_compute ) THEN
