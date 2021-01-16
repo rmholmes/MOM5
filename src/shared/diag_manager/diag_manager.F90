@@ -2125,10 +2125,12 @@ CONTAINS
                    END IF
 !$OMP CRITICAL
                    IF ( need_compute .AND. .NOT.phys_window ) THEN
+                      write(*,*) '! need_compute .AND. .NOT.phys_window'
                       IF ( ANY(mask(l_start(1)+hi:l_end(1)+hi,l_start(2)+hj:l_end(2)+hj,l_start(3):l_end(3))) ) &
                            & output_fields(out_num)%count_0d(sample) =&
                            & output_fields(out_num)%count_0d(sample) + weight1
                    ELSE
+                      write(*,*) '! NOT need_compute .AND. .NOT.phys_window'
                       IF ( ANY(mask(f1:f2,f3:f4,ks:ke)) ) output_fields(out_num)%count_0d(sample) =&
                            & output_fields(out_num)%count_0d(sample)+weight1
                    END IF
