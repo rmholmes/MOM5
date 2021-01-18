@@ -2350,7 +2350,7 @@ CONTAINS
                                      IF (fwd_risavg) THEN
                                         output_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + 1
                                      ELSE
-                                       ooutput_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + weight1
+                                       output_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + weight1
                                      END IF
                                      write(*,*) '! 18 count0d outer0'
                                      EXIT outer0
