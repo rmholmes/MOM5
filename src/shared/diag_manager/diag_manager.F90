@@ -1698,8 +1698,9 @@ CONTAINS
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
-          write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0, &
-                      'current time:', second+day*60.0*60.0*24.0
+          ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
+          ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
+          write(*,*) '! 1 next-current=weight', weight1
        END IF
 
        ! compute the diurnal index
