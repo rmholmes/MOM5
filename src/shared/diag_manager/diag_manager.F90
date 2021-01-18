@@ -2118,7 +2118,7 @@ CONTAINS
                    END IF
 !$OMP CRITICAL
                    IF ( need_compute .AND. .NOT.phys_window ) THEN
-                      write(*,*) '! 15need_compute .AND. .NOT.phys_window'
+                      write(*,*) '! 2 need_compute .AND. .NOT.phys_window'
                       IF (fwd_risavg) THEN
                         IF ( ANY(mask(l_start(1)+hi:l_end(1)+hi,l_start(2)+hj:l_end(2)+hj,l_start(3):l_end(3))) ) &
                              & output_fields(out_num)%count_0d(sample) =&
@@ -2130,7 +2130,7 @@ CONTAINS
                       END IF
 
                    ELSE
-                      write(*,*) '! 16 NOT need_compute .AND. .NOT.phys_window'
+                      write(*,*) '! 3 NOT need_compute .AND. .NOT.phys_window'
                       IF (fwd_risavg) THEN
                         IF ( ANY(mask(f1:f2,f3:f4,ks:ke)) ) output_fields(out_num)%count_0d(sample) =&
                              & output_fields(out_num)%count_0d(sample) + 1
@@ -2267,7 +2267,7 @@ CONTAINS
 !$OMP CRITICAL
 
                    IF (fwd_risavg) THEN
-                     write(*,*) '! 17 count0d fwd ris_avg'
+                     write(*,*) '! 4 count0d fwd ris_avg'
                      IF ( .NOT.phys_window ) output_fields(out_num)%count_0d(sample) =&
                           & output_fields(out_num)%count_0d(sample) + 1
                    ELSE
@@ -2352,7 +2352,7 @@ CONTAINS
                                      ELSE
                                        output_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + weight1
                                      END IF
-                                     write(*,*) '! 18 count0d outer0'
+                                     write(*,*) '! 5 count0d outer0'
                                      EXIT outer0
                                   END IF
                                END DO
@@ -2421,7 +2421,7 @@ CONTAINS
                                   ELSE
                                     output_fields(out_num)%count_0d = output_fields(out_num)%count_0d + weight1
                                   END IF
-                                  write(*,*) '! 19 count0d outer3'
+                                  write(*,*) '! 6 count0d outer3'
                                   EXIT outer3
                                END IF
                             END DO
@@ -2429,6 +2429,7 @@ CONTAINS
                       END DO outer3
 !$OMP END CRITICAL
                    ELSE
+                     write(*,*) '! 7 count0d outer1 numthreads > 1 .AND. phys_window ', input_fields(diag_field_id)%field_name
                       IF ( debug_diag_manager ) THEN
                          CALL update_bounds(out_num, is-hi, ie-hi, js-hj, je-hj, ks, ke)
                          CALL check_out_of_bounds(out_num, diag_field_id, err_msg=err_msg_local)
@@ -2440,6 +2441,7 @@ CONTAINS
                          END IF
                       END IF
                       IF( numthreads > 1 .AND. phys_window ) then
+                        write(*,*) '! 8 count0d outer1 numthreads > 1 .AND. phys_window '
                          DO k=ks, ke
                             DO j=js, je
                                DO i=is, ie
@@ -2461,6 +2463,7 @@ CONTAINS
                          END DO
                       ELSE
 !$OMP CRITICAL
+                        write(*,*) '! 9 count0d outer1 NOT numthreads > 1 .AND. phys_window'
                          DO k=ks, ke
                             DO j=js, je
                                DO i=is, ie
@@ -2489,10 +2492,11 @@ CONTAINS
                                IF ( field(i,j,k) /= missvalue ) THEN
                                   IF (fwd_risavg) THEN
                                     output_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + 1
+                                    write(*,*) '! 10 count0d outer1 NOT fwd_risavg'
                                   ELSE
                                     output_fields(out_num)%count_0d(sample) = output_fields(out_num)%count_0d(sample) + weight1
+                                    write(*,*) '! 11 count0d outer1 NOT fwd_risavg'
                                   END IF
-                                  write(*,*) '! 20 count0d outer1'
                                   EXIT outer1
                                END IF
                             END DO
@@ -2615,11 +2619,11 @@ CONTAINS
                    IF (fwd_risavg) THEN
                      IF ( .NOT.phys_window ) output_fields(out_num)%count_0d(sample) =&
                           & output_fields(out_num)%count_0d(sample) + 1
-                      write(*,*) '! 8 count0d fwd_risavg'
+                      write(*,*) '! 12 count0d fwd_risavg'
                    ELSE
                      IF ( .NOT.phys_window ) output_fields(out_num)%count_0d(sample) =&
                           & output_fields(out_num)%count_0d(sample) + weight1
-                      write(*,*) '! 9 count0d NOT fwd_risavg'
+                      write(*,*) '! 13 count0d NOT fwd_risavg'
                    END IF
 
 
@@ -2714,7 +2718,7 @@ CONTAINS
              END IF
           END IF
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 10 count0d 2'
+          write(*,*) '! 14 count0d 2'
        ELSE IF ( time_min ) THEN
           IF ( PRESENT(mask) ) THEN
              IF ( need_compute ) THEN
@@ -2793,10 +2797,10 @@ CONTAINS
              END IF
           END IF
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 11 count0d 3'
+          write(*,*) '! 15 count0d 3'
        ELSE  ! ( not average, not min, max)
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 12 count0d 4'
+          write(*,*) '! 16 count0d 4'
           IF ( need_compute ) THEN
              DO j = js, je
                 DO i = is, ie
@@ -3073,7 +3077,7 @@ CONTAINS
                       IF ( output_fields(out_num)%counter(i,j,k,m) > 0. )THEN
                          output_fields(out_num)%buffer(i,j,k,m) = &
                               & output_fields(out_num)%buffer(i,j,k,m)/output_fields(out_num)%counter(i,j,k,m)
-                              write(*,*) '! 13 buffer/output_fields counter '
+                              write(*,*) '! 17 buffer/output_fields counter '
                          IF ( time_rms ) output_fields(out_num)%buffer(i,j,k,m) = &
                               SQRT(output_fields(out_num)%buffer(i,j,k,m))
                       ELSE
@@ -3093,7 +3097,7 @@ CONTAINS
                 END IF
              ELSE
                 num = output_fields(out_num)%count_0d(m)
-                write(*,*) '! 14 count0d num'
+                write(*,*) '! 18 count0d num'
              END IF
              IF ( num > 0. ) THEN
                 IF ( missvalue_present ) THEN
@@ -3159,7 +3163,7 @@ CONTAINS
                & diag_time_inc(output_fields(out_num)%next_next_output, freq, units)
        END IF
        output_fields(out_num)%count_0d(:) = 0.0
-       write(*,*) '! 15 count0d = 0'
+       write(*,*) '! 19 count0d = 0'
        output_fields(out_num)%num_elements(:) = 0
        IF ( time_max ) THEN
           output_fields(out_num)%buffer = MAX_VALUE
@@ -3313,7 +3317,7 @@ CONTAINS
        IF ( freq /= END_OF_RUN .AND. files(file)%file_unit < 0 &
             & .AND. ALL(output_fields(i)%num_elements(:) == 0)&
             & .AND. ALL(output_fields(i)%count_0d(:) == 0) ) CYCLE
-            write(*,*) '! 16 count0d == 0, CYCLE'
+            write(*,*) '! 20 count0d == 0, CYCLE'
        ! Is it time to output for this field; CAREFUL ABOUT >= vs > HERE
        ! For end should be >= because no more data is coming
        IF ( time >= output_fields(i)%next_output .OR. freq == END_OF_RUN ) THEN
