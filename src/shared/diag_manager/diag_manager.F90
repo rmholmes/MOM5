@@ -1701,6 +1701,8 @@ CONTAINS
           ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
           ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
           write(*,*) '! 1 next-current=weight', weight1
+          write(*,*) '! 1a output frequency', freq
+          write(*,*) '! 1b output units', units
        END IF
 
        ! compute the diurnal index
