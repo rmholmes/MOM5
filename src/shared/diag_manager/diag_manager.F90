@@ -513,6 +513,7 @@ CONTAINS
     LOGICAL :: mask_variant1, verbose1
     LOGICAL :: cm_found
     CHARACTER(len=128) :: msg
+    INTEGER :: second_init, day_init, tick_init
 
     ! get stdout unit number
     stdout_unit = stdout()
@@ -605,6 +606,9 @@ CONTAINS
                 files(file_num)%local = .TRUE.
              END IF
           END IF
+
+          CALL get_time(init_time,second_init,day_init)
+          write(*,*) '! initial time:', second_init+day_init*60.0*60.0*24.0
 
           ! Need to sync start_time of file with init time of model
           ! and close_time calculated with the duration of the file.
@@ -1699,7 +1703,8 @@ CONTAINS
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
           ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
-          ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
+          write(*,*) '! current time:', second+day*60.0*60.0*24.0
+          write(*,*) '! next output:', second_next+day_next*60.0*60.0*24.0
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
           write(*,*) '! 1b output units', units
