@@ -377,6 +377,7 @@ integer, dimension(:), allocatable :: id_tracer_advection
 integer, dimension(:), allocatable :: id_tracer_advection_on_nrho
 integer, dimension(:), allocatable :: id_tracer2_advection
 integer, dimension(:), allocatable :: id_tracer_adv_diss
+integer, dimension(:), allocatable :: id_tracer_adv_diss_on_nrho
 
 integer, dimension(:), allocatable :: id_sweby_advect
 integer, dimension(:), allocatable :: id_psom_advect
@@ -780,6 +781,7 @@ subroutine advection_diag_init (Time, Dens, T_prog)
   allocate (id_tracer_advection_on_nrho(num_prog_tracers))
   allocate (id_tracer2_advection(num_prog_tracers))
   allocate (id_tracer_adv_diss(num_prog_tracers))
+  allocate (id_tracer_adv_diss_on_nrho(num_prog_tracers))
   allocate (id_sweby_advect(num_prog_tracers))
   allocate (id_psom_advect(num_prog_tracers))
   allocate (id_horz_advect(num_prog_tracers))
@@ -799,6 +801,7 @@ subroutine advection_diag_init (Time, Dens, T_prog)
   id_tracer_advection_on_nrho =-1
   id_tracer2_advection=-1
   id_tracer_adv_diss  =-1
+  id_tracer_adv_diss_on_nrho  =-1
   id_sweby_advect     =-1
   id_psom_advect      =-1
   id_horz_advect      =-1
@@ -878,6 +881,11 @@ subroutine advection_diag_init (Time, Dens, T_prog)
       'dissipation of squared '//trim(T_prog(n)%name)//' from advection errors',                     &
       '(Watt/m^2)^2', missing_value=missing_value,                                                   &
        range=(/-1.e18,1.e18/))
+      id_tracer_adv_diss_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_adv_diss_on_nrho', &
+      Dens%neutralrho_axes(1:3), Time%model_time,                                                         &
+      'dissipation of squared '//trim(T_prog(n)%name)//' from advection errors binned to neutral density',  &
+      '(Watt/m^2)^2', missing_value=missing_value,                                                   &
+       range=(/-1.e18,1.e18/))
 
     else
 
@@ -940,6 +948,11 @@ subroutine advection_diag_init (Time, Dens, T_prog)
       id_tracer_adv_diss(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_adv_diss', &
       Grd%tracer_axes(1:3), Time%model_time,                                                         &
       'dissipation of squared '//trim(T_prog(n)%name)//' from advection errors',                     &
+      '[kg/(m^2*sec)]^2', missing_value=missing_value,                                               &
+       range=(/-1.e18,1.e18/))
+      id_tracer_adv_diss_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_adv_diss_on_nrho', &
+      Dens%neutralrho_axes(1:3), Time%model_time,                                                         &
+      'dissipation of squared '//trim(T_prog(n)%name)//' from advection errors binned to neutral density',  &
       '[kg/(m^2*sec)]^2', missing_value=missing_value,                                               &
        range=(/-1.e18,1.e18/))
 
@@ -7731,6 +7744,9 @@ subroutine compute_adv_diss(Time, Adv_vel, Thickness, T_prog, Tracer, ntracer, d
   enddo
 
   call diagnose_3d(Time, Grd, id_tracer_adv_diss(ntracer), wrk4(:,:,:))
+  if(id_tracer_adv_diss_on_nrho(ntracer) > 0) then
+     call diagnose_3d_rho(Time, Dens, id_tracer_adv_diss_on_nrho(ntracer), wrk4)
+  endif
 
   if(id_tracer2_advection(ntracer) > 0) then 
      call diagnose_3d(Time, Grd, id_tracer2_advection(ntracer), wrk1(:,:,:)*Tracer%conversion**2)
