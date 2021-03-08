@@ -602,7 +602,8 @@ CONTAINS
           output_fields(ind)%last_output = init_time
 
           ! check the initial time - DELETE
-          CALL get_time(output_fields(init_time,second_init,day_init))
+          CALL get_time(output_fields(ind)%init_time,second_init,day_init)
+          ! CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           write(*,*) '! initial time:', second_init+day_init*24*60*60
 
           ! Get output frequency from for the appropriate output file
