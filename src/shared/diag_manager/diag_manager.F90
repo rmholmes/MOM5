@@ -513,8 +513,6 @@ CONTAINS
     LOGICAL :: mask_variant1, verbose1
     LOGICAL :: cm_found
     CHARACTER(len=128) :: msg
-    INTEGER :: second_init, day_init, tick_init
-
     INTEGER :: day_init,second_init,tick_init ! components of the next output date
 
     ! get stdout unit number
@@ -1710,7 +1708,7 @@ CONTAINS
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
-          IF (weight1 < 0)
+          IF (weight1 < 0) THEN
             weight1 = 60.0*60.0*24.0 - 60.0*60.0*1.5
             ! CALL get_time(time + dt*60*60,second_next,day_next)
           END IF
