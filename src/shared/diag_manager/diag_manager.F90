@@ -1710,11 +1710,10 @@ CONTAINS
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
           IF (weight1 < 0) THEN
             weight1 = 60.0*60.0*24.0 - 60.0*60.0*1.5
-            ! CALL get_time(time + dt*60*60,second_next,day_next)
+            ! CALL get_time(time + dt,second_next,day_next)
           END IF
           ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
           ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
-          write(*,*) '! dt:', dt
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
           write(*,*) '! 1b output units', units
