@@ -515,6 +515,8 @@ CONTAINS
     CHARACTER(len=128) :: msg
     INTEGER :: second_init, day_init, tick_init
 
+    INTEGER :: day_init,second_init,tick_init ! components of the next output date
+
     ! get stdout unit number
     stdout_unit = stdout()
 
@@ -598,6 +600,11 @@ CONTAINS
           output_fields(ind)%static = .FALSE.
           ! Set up times in output_fields
           output_fields(ind)%last_output = init_time
+
+          ! check the initial time - DELETE
+          CALL get_time(output_fields(init_time,second_init,day_init))
+          write(*,*) '! initial time:', second_init+day_init*24*60*60
+
           ! Get output frequency from for the appropriate output file
           file_num = output_fields(ind)%output_file
           IF ( file_num == max_files ) CYCLE
@@ -1702,12 +1709,17 @@ CONTAINS
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
+          IF (weight1 < 0)
+            weight1 = 60.0*60.0*24.0 - 60.0*60.0*1.5
+            ! CALL get_time(time + dt*60*60,second_next,day_next)
+          END IF
           ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
-          write(*,*) '! current time:', second+day*60.0*60.0*24.0
-          write(*,*) '! next output:', second_next+day_next*60.0*60.0*24.0
+          ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
+          write(*,*) '! dt:', dt
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
           write(*,*) '! 1b output units', units
+          write(*,*) '! next time', second_next+day_next*60.0*60.0*24.0
        END IF
 
        ! compute the diurnal index
@@ -2726,7 +2738,6 @@ CONTAINS
              END IF
           END IF
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 14 count0d 2'
        ELSE IF ( time_min ) THEN
           IF ( PRESENT(mask) ) THEN
              IF ( need_compute ) THEN
@@ -2805,10 +2816,8 @@ CONTAINS
              END IF
           END IF
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 15 count0d 3'
        ELSE  ! ( not average, not min, max)
           output_fields(out_num)%count_0d(sample) = 1
-          write(*,*) '! 16 count0d 4'
           IF ( need_compute ) THEN
              DO j = js, je
                 DO i = is, ie
