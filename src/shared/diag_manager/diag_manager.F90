@@ -1709,7 +1709,7 @@ CONTAINS
          CALL get_time(time,second,day)
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
          CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
-         days = second_previous/(60.0*60.0*24.0) + day_previous
+         days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
           IF (weight1 < 0) THEN
@@ -1719,7 +1719,7 @@ CONTAINS
           END IF
           ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
           ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
-          write(*,*) '! 1c days:', days
+          write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
           write(*,*) '! 1b output units', units
