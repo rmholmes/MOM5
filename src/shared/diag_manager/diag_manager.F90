@@ -1444,6 +1444,7 @@ CONTAINS
     INTEGER :: sample ! index along the diurnal time axis
     INTEGER :: day,second,tick ! components of the current date
     INTEGER :: day_next,second_next,tick_next ! components of the next output date
+    INTEGER :: day_next_next,second_next_next,tick_next_next ! components of the next output date
     INTEGER :: day_previous,second_previous,tick_previous ! components of the previous output date
     INTEGER :: days
     INTEGER :: status
@@ -1708,17 +1709,18 @@ CONTAINS
        IF (fwd_risavg) THEN
          CALL get_time(time,second,day)
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
-         CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
-         days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
+
           ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
           IF (weight1 < 0) THEN
             ! days
-            weight1 = 60.0*60.0*24.0 - 60.0*60.0*1.5
+            CALL get_time(output_fields(out_num)%next_next_output,second_next_next,day_next_next)
+            weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
             ! CALL get_time(time + dt,second_next,day_next)
           END IF
-          ! write(*,*) '! 1 next output time:', second_next+day_next*60.0*60.0*24.0
-          ! write(*,*) 'current time:', second+day*60.0*60.0*24.0
+          ! CHECKS FOR TIME OUTPUTS - DELETE THESE
+          CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
+          days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
