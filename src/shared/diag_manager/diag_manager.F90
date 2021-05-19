@@ -1720,9 +1720,11 @@ CONTAINS
           CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
           days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
           count = output_fields(out_num)%count_0d(sample)
-          ts = ((second_next+day_next)-(second_previous+day_previous))/count
           write(*,*) '! 1d count:', count
-          write(*,*) '! 1e time step:', ts
+          IF (count > 0)
+            ts = ((second_next+day_next)-(second_previous+day_previous))/count
+            write(*,*) '! 1e time step:', ts
+          END IF
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
