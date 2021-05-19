@@ -1721,8 +1721,8 @@ CONTAINS
           days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
           count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
-          IF (count > 0)
-            ts = ((second_next+day_next)-(second_previous+day_previous))/count
+          IF (count > 0) THEN
+            ts = ((second_next+day_next)-(second_previous+day_previous)) / count
             write(*,*) '! 1e time step:', ts
           END IF
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
