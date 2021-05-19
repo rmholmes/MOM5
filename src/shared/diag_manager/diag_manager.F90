@@ -601,7 +601,6 @@ CONTAINS
 
           ! check the initial time - DELETE
           CALL get_time(init_time,second_init,day_init)
-          ! CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
           write(*,*) '! initial time:', second_init+day_init*24*60*60
 
           ! Get output frequency from for the appropriate output file
@@ -613,8 +612,6 @@ CONTAINS
              END IF
           END IF
 
-          CALL get_time(init_time,second_init,day_init)
-          write(*,*) '! initial time:', second_init+day_init*60.0*60.0*24.0
 
           ! Need to sync start_time of file with init time of model
           ! and close_time calculated with the duration of the file.
@@ -1435,6 +1432,7 @@ CONTAINS
 
     REAL :: weight1
     REAL :: missvalue
+    REAL :: ts
     INTEGER :: pow_value
     INTEGER :: ksr, ker
     INTEGER :: i, out_num, file_num, n1, n2, n3, number_of_outputs, ii,f1,f2,f3,f4
@@ -1447,6 +1445,7 @@ CONTAINS
     INTEGER :: day_next_next,second_next_next,tick_next_next ! components of the next output date
     INTEGER :: day_previous,second_previous,tick_previous ! components of the previous output date
     INTEGER :: days
+    INTEGER :: count
     INTEGER :: status
     INTEGER :: numthreads
     INTEGER :: active_omp_level
@@ -1716,11 +1715,14 @@ CONTAINS
             ! days
             CALL get_time(output_fields(out_num)%next_next_output,second_next_next,day_next_next)
             weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
-            ! CALL get_time(time + dt,second_next,day_next)
           END IF
           ! CHECKS FOR TIME OUTPUTS - DELETE THESE
           CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
           days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
+          count = output_fields(out_num)%count_0d(sample)
+          ts = ((second_next+day_next)-(second_previous+day_previous))/count
+          write(*,*) '! 1d count:', count
+          write(*,*) '! 1e time step:', ts
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! 1a output frequency', freq
