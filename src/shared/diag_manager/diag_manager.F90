@@ -1722,7 +1722,7 @@ CONTAINS
           count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
           IF (count > 0) THEN
-            ts = ((second_next+day_next)-(second_previous+day_previous)) / count
+            ts = ((second+day)*60.0-(second_previous+day_previous)*60.0) / count
             write(*,*) '! 1e time step:', ts
           END IF
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
