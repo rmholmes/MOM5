@@ -1709,7 +1709,6 @@ CONTAINS
          CALL get_time(time,second,day)
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
 
-          ! weight1 = time-output_fields(out_num)%last_output
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
           IF (weight1 < 0) THEN
             ! days
@@ -1722,10 +1721,10 @@ CONTAINS
           count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
           IF (count > 0) THEN
-            ts = ((second+day*60.0)-(second_previous+day_previous*60.0)) / count
+            ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / count
             write(*,*) '! 1e time step:', ts
-            write(*,*) '! 1f current time:', (second+day*60.0)
-            write(*,*) '! 1h previous time:', (second+day*60.0)
+            write(*,*) '! 1f current time:', (second+day*60.0*60.0*24.0)
+            write(*,*) '! 1h previous time:', (second_previous+day_previous*60.0*60.0*24.0)
           END IF
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
