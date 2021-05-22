@@ -1722,8 +1722,10 @@ CONTAINS
           count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
           IF (count > 0) THEN
-            ts = ((second+day)*60.0-(second_previous+day_previous)*60.0) / count
+            ts = ((second+day*60.0)-(second_previous+day_previous*60.0)) / count
             write(*,*) '! 1e time step:', ts
+            write(*,*) '! 1f current time:', (second+day*60.0)
+            write(*,*) '! 1h previous time:', (second+day*60.0)
           END IF
           write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
