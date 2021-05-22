@@ -1724,6 +1724,7 @@ CONTAINS
             ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / count
             write(*,*) '! 1e time step:', ts, 'count: ', count
           END IF
+          write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0))
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! next time', second_next+day_next*60.0*60.0*24.0
        END IF
