@@ -1722,14 +1722,9 @@ CONTAINS
           write(*,*) '! 1d count:', count
           IF (count > 0) THEN
             ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / count
-            write(*,*) '! 1e time step:', ts
-            write(*,*) '! 1f current time:', (second+day*60.0*60.0*24.0)
-            write(*,*) '! 1h previous time:', (second_previous+day_previous*60.0*60.0*24.0)
+            write(*,*) '! 1e time step:', ts, 'count: ', count
           END IF
-          write(*,*) '! 1c days:', days/(60.0*60.0*24.0)
           write(*,*) '! 1 next-current=weight', weight1
-          write(*,*) '! 1a output frequency', freq
-          write(*,*) '! 1b output units', units
           write(*,*) '! next time', second_next+day_next*60.0*60.0*24.0
        END IF
 
