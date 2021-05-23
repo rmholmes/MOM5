@@ -1721,10 +1721,11 @@ CONTAINS
           count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
           IF (count > 0) THEN
-            ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / count
+            ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1)
             write(*,*) '! 1e time step:', ts, 'count: ', count
           END IF
-          write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0))
+          write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)), 'count',
+          count
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! next time', second_next+day_next*60.0*60.0*24.0
        END IF
