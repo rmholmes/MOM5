@@ -1708,19 +1708,17 @@ CONTAINS
        IF (fwd_risavg) THEN
          CALL get_time(time,second,day)
          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
-
-          weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
+          count = output_fields(out_num)%count_0d(sample)
+          ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1.0)
+          weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) - ts/2.0
+          ! subtract half timestep so weighting is at the midpoint of the timestep
           IF (weight1 < 0) THEN
-            ! days
             CALL get_time(output_fields(out_num)%next_next_output,second_next_next,day_next_next)
-            weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0)
+            weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) - ts/2.0
           END IF
           ! CHECKS FOR TIME OUTPUTS - DELETE THESE
           CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
-          days = (second_next+day_next*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)
-          count = output_fields(out_num)%count_0d(sample)
           write(*,*) '! 1d count:', count
-          ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1.0)
           write(*,*) '! 1e time step:', ts, 'count: ', count
           write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0))
           write(*,*) '! 1 next-current=weight', weight1
