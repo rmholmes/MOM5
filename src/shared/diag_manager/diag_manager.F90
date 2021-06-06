@@ -1430,7 +1430,7 @@ CONTAINS
     REAL, DIMENSION(:,:,:), INTENT(in), OPTIONAL :: rmask
     CHARACTER(len=*), INTENT(out), OPTIONAL :: err_msg
 
-    CHARACTER(len=*) :: diag_name
+    CHARACTER(len=64) :: diag_name
 
     REAL :: weight1
     REAL :: missvalue
@@ -1710,6 +1710,7 @@ CONTAINS
        IF (fwd_risavg) THEN
           CALL get_time(time,second,day)
           CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
+          CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
           diag_name = output_fields(out_num)%output_name
           count = output_fields(out_num)%count_0d(sample)
           ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1.0)
