@@ -1430,6 +1430,8 @@ CONTAINS
     REAL, DIMENSION(:,:,:), INTENT(in), OPTIONAL :: rmask
     CHARACTER(len=*), INTENT(out), OPTIONAL :: err_msg
 
+    CHARACTER(len=*) :: diag_name
+
     REAL :: weight1
     REAL :: missvalue
     REAL :: ts
@@ -1706,8 +1708,9 @@ CONTAINS
        ! compute the forward rising average weight from 0 to 1
        fwd_risavg = output_fields(out_num)%fwd_risavg
        IF (fwd_risavg) THEN
-         CALL get_time(time,second,day)
-         CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
+          CALL get_time(time,second,day)
+          CALL get_time(output_fields(out_num)%next_output,second_next,day_next)
+          diag_name = output_fields(out_num)%output_name
           count = output_fields(out_num)%count_0d(sample)
           ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1.0)
           weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) - ts/2.0
@@ -1719,7 +1722,7 @@ CONTAINS
           ! CHECKS FOR TIME OUTPUTS - DELETE THESE
           CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
           write(*,*) '! 1d count:', count
-          write(*,*) '! 1e time step:', ts, 'count: ', count
+          write(*,*) '! 1e time step:', ts, 'count: ', count,'field: ', diag_name
           write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0))
           write(*,*) '! 1 next-current=weight', weight1
           write(*,*) '! next time', second_next+day_next*60.0*60.0*24.0
