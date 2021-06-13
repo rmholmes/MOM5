@@ -1714,14 +1714,14 @@ CONTAINS
           diag_name = output_fields(out_num)%output_name
           count = output_fields(out_num)%count_0d(sample)
           ts = ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0)) / (count + 1.0)
-          weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) - ts/2.0
+          weight1 = (second_next+day_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) !- ts/2.0
           ! subtract half timestep so weighting is at the midpoint of the timestep
           IF (weight1 < 0) THEN
             CALL get_time(output_fields(out_num)%next_next_output,second_next_next,day_next_next)
-            weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) - ts/2.0
+            weight1 = (second_next_next+day_next_next*60.0*60.0*24.0)-(second+day*60.0*60.0*24.0) !- ts/2.0
           END IF
           ! CHECKS FOR TIME OUTPUTS - DELETE THESE
-          CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
+          ! CALL get_time(output_fields(out_num)%last_output,second_previous,day_previous)
           write(*,*) '! 1d count:', count
           write(*,*) '! 1e time step:', ts, 'count: ', count,'field: ', diag_name
           write(*,*) '! 1f elapsed time:', ((second+day*60.0*60.0*24.0)-(second_previous+day_previous*60.0*60.0*24.0))
