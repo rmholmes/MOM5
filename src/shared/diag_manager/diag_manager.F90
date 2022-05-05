@@ -1863,11 +1863,11 @@ CONTAINS
                                              & field(i-is+1+hi, j-js+1+hj, k) * weight1
                                      END IF
                                      IF (fwd_risavg) THEN
-                                       output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
-                                            &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                       output_fields(out_num)%counter(i-hi,j-hj,k1,sample) =&
+                                            &output_fields(out_num)%counter(i-hi,j-hj,k1,sample) + 1
                                      ELSE
-                                       output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
-                                            &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
+                                       output_fields(out_num)%counter(i-hi,j-hj,k1,sample) =&
+                                            &output_fields(out_num)%counter(i-hi,j-hj,k1,sample) + weight1
                                      END IF
                                   END IF
                                END DO
@@ -1917,11 +1917,11 @@ CONTAINS
                                              & field(i-is+1+hi, j-js+1+hj, k) * weight1
                                      END IF
                                      IF (fwd_risavg) THEN
-                                       output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
-                                            &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + 1
+                                       output_fields(out_num)%counter(i-hi,j-hj,k1,sample) =&
+                                            &output_fields(out_num)%counter(i-hi,j-hj,k1,sample) + 1
                                      ELSE
-                                       output_fields(out_num)%counter(i-hi,j-hj,k,sample) =&
-                                            &output_fields(out_num)%counter(i-hi,j-hj,k,sample) + weight1
+                                       output_fields(out_num)%counter(i-hi,j-hj,k1,sample) =&
+                                            &output_fields(out_num)%counter(i-hi,j-hj,k1,sample) + weight1
                                      END IF
                                   END IF
                                END DO
