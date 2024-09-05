@@ -1790,7 +1790,7 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
 
   ! compute mld using tau values:
    call calc_mixed_layer_depth(Thickness,                   &
-           Dens%rho_salinity(isd:ied,jsd:jed,:,tau),        &
+           T_prog(index_salt)%field(isd:ied,jsd:jed,:,tau), &
            T_prog(index_temp)%field(isd:ied,jsd:jed,:,tau), &
            Dens%rho(isd:ied,jsd:jed,:,tau),                 &
            Dens%pressure_at_depth(isd:ied,jsd:jed,:),       &
@@ -1849,9 +1849,12 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
         enddo
      enddo
   enddo
+  tendency_2d(:,:) = 0.0
   do j=jsc,jec
       do i=isc,iec
-         tendency_2d(i,j) = wrk1_2d(i,j)/mld(i,j)
+         if (Grd%tmask(i,j,1)==1.0) then
+            tendency_2d(i,j) = wrk1_2d(i,j)/(mld(i,j) + epsln)
+         endif
       enddo
   enddo
   
