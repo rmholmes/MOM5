@@ -351,6 +351,7 @@ public calc_mixed_layer_depth
 public calc_potrho_mixed_layer 
 public send_tracer_variance
 public diagnose_eta_tend_3dflux
+public compute_budget_mld
 
 private compute_subduction 
 private compute_tracer_mld
@@ -1755,6 +1756,108 @@ subroutine compute_tracer_mld(Time, Thickness, Dens, T_prog, salinity, theta)
 end subroutine compute_tracer_mld
 ! </SUBROUTINE>  NAME="compute_tracer_mld"
 
+!#######################################################################
+! <SUBROUTINE NAME="compute_budget_mld">
+!
+! <DESCRIPTION>
+!
+! Diagnose the vertically integrated tracer tendency within the mixed layer.
+!
+!
+! Ryan.Holmes
+! September 2024
+! </DESCRIPTION>
+!
+subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_2d)
+
+  type(ocean_time_type),        intent(in)    :: Time
+  type(ocean_thickness_type),   intent(in)    :: Thickness
+  type(ocean_density_type),     intent(in)    :: Dens
+  type(ocean_prog_tracer_type), intent(in)    :: T_prog(:)
+  real, dimension(isd:,jsd:,:), intent(in)    :: tendency    ! 3D tendency
+  real, dimension(isd:,jsd:),   intent(out)   :: tendency_2d ! integrated tendency
+
+  integer :: i,j,k,kp1,n
+  integer :: tau
+  real, dimension(isd:ied,jsd:jed) :: mld
+
+  if (.not.module_is_initialized) then
+    call mpp_error(FATAL, &
+    '==>Error from ocean_tracer_diag_mod (compute_tracer_mld): module needs initialization')
+  endif
+
+  tau = Time%tau
+
+  ! compute mld using tau values:
+   call calc_mixed_layer_depth(Thickness,                   &
+           Dens%rho_salinity(isd:ied,jsd:jed,:,tau),        &
+           T_prog(index_temp)%field(isd:ied,jsd:jed,:,tau), &
+           Dens%rho(isd:ied,jsd:jed,:,tau),                 &
+           Dens%pressure_at_depth(isd:ied,jsd:jed,:),       &
+           mld(:,:), smooth_mld_input=.false.)
+
+  ! determine column masking function
+  wrk1(:,:,:) = 0.0
+  k=1
+  do j=jsc,jec
+     do i=isc,iec
+        if(Grd%tmask(i,j,k)==1.0) then
+            if(Thickness%depth_zwt(i,j,k) >= mld(i,j)) then
+                wrk1(i,j,1)    = mld(i,j)/Thickness%depth_zwt(i,j,k)
+                wrk1(i,j,2:nk) = 0.0
+            endif
+        endif
+     enddo
+  enddo
+  
+  ! k>1 
+  do j=jsc,jec
+     do i=isc,iec
+        kloopA:    do k=2,nk
+           if(Grd%tmask(i,j,k)==1.0) then 
+               if(Thickness%depth_zwt(i,j,k)   >= mld(i,j) .and. &
+                  Thickness%depth_zwt(i,j,k-1) <  mld(i,j)) then
+                   kp1 = min(k+1,nk)
+                   wrk1(i,j,1:k-1)  = 1.0
+                   wrk1(i,j,k)      = (mld(i,j)-Thickness%depth_zwt(i,j,k-1))/Thickness%dzt(i,j,k)
+                   wrk1(i,j,kp1:nk) = 0.0
+                   exit kloopA
+               endif
+           endif
+        enddo kloopA
+     enddo
+  enddo
+
+  k=nk
+  do j=jsc,jec
+     do i=isc,iec
+        if(Grd%tmask(i,j,k)==1.0) then 
+            if(Thickness%depth_zwt(i,j,k) <= mld(i,j)) then
+                wrk1(i,j,:) = 1.0
+            endif
+        endif
+     enddo
+  enddo
+ 
+  ! compute the vertically integrated tracer within the mixed layer   
+  wrk1_2d(:,:) = 0.0
+  do k=1,nk
+     do j=jsc,jec
+        do i=isc,iec
+           wrk1_2d(i,j) = wrk1_2d(i,j) &
+                           + wrk1(i,j,k)*Thickness%rho_dzt(i,j,k,tau)*tendency(i,j,k)
+        enddo
+     enddo
+  enddo
+  do j=jsc,jec
+      do i=isc,iec
+         tendency_2d(i,j) = wrk1_2d(i,j)/mld(i,j)
+      enddo
+  enddo
+  
+
+end subroutine compute_budget_mld
+! </SUBROUTINE>  NAME="compute_budget_mld"
 
 
 !#######################################################################
