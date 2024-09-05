@@ -1780,6 +1780,8 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
   integer :: i,j,k,kp1,n
   integer :: tau
   real, dimension(isd:ied,jsd:jed) :: mld
+  real, parameter :: epsln=1.0e-20  ! for divisions 
+
 
   if (.not.module_is_initialized) then
     call mpp_error(FATAL, &
