@@ -2115,6 +2115,7 @@ subroutine vert_advect_tracer(Time, Adv_vel, Dens, Thickness, T_prog, Tracer, nt
 
   integer :: tau, taum1
   integer :: i,j,k
+  real,dimension(isd:ied,jsd:jed)             :: advect_tendency_in_mld
 
   if(zero_tracer_advect_vert) return 
 
@@ -2190,8 +2191,8 @@ subroutine vert_advect_tracer(Time, Adv_vel, Dens, Thickness, T_prog, Tracer, nt
          call diagnose_3d(Time, Grd, id_tracer_advection(ntracer), Tracer%conversion*advect_tendency(:,:,:))
       endif
       if(id_tracer_advection_in_mld(ntracer) > 0) then
-         call compute_budget_mld(Time, Thickness, Dens, T_prog, advect_tendency(:,:,:), wrk1_2d(:,:))
-         call diagnose_2d(Time, Grd, id_tracer_advection_in_mld(ntracer), Tracer%conversion*wrk1_2d(:,:))
+         call compute_budget_mld(Time, Thickness, Dens, T_prog, advect_tendency(:,:,:), advect_tendency_in_mld(:,:))
+         call diagnose_2d(Time, Grd, id_tracer_advection_in_mld(ntracer), Tracer%conversion*advect_tendency_in_mld(:,:))
       endif
       if(id_tracer_advection_on_nrho(ntracer) > 0) then
          call diagnose_3d_rho(Time, Dens, id_tracer_advection_on_nrho(ntracer), Tracer%conversion*advect_tendency)
