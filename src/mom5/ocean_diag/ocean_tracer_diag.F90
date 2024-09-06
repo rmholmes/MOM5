@@ -1775,7 +1775,7 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
   type(ocean_density_type),     intent(in)    :: Dens
   type(ocean_prog_tracer_type), intent(in)    :: T_prog(:)
   real, dimension(isd:,jsd:,:), intent(in)    :: tendency    ! 3D tendency
-  real, dimension(isd:,jsd:),   intent(out)   :: tendency_2d ! integrated tendency
+  real, dimension(isd:,jsd:),   intent(inout)   :: tendency_2d ! integrated tendency
 
   integer :: i,j,k,kp1,n
   integer :: tau

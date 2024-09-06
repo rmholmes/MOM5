@@ -2190,7 +2190,6 @@ subroutine vert_advect_tracer(Time, Adv_vel, Dens, Thickness, T_prog, Tracer, nt
          call diagnose_3d(Time, Grd, id_tracer_advection(ntracer), Tracer%conversion*advect_tendency(:,:,:))
       endif
       if(id_tracer_advection_in_mld(ntracer) > 0) then
-         wrk1_2d(:,:) = 0.0
          call compute_budget_mld(Time, Thickness, Dens, T_prog, advect_tendency(:,:,:), wrk1_2d(:,:))
          call diagnose_2d(Time, Grd, id_tracer_advection_in_mld(ntracer), Tracer%conversion*wrk1_2d(:,:))
       endif
