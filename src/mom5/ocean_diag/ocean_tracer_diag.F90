@@ -1847,7 +1847,7 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
      do j=jsc,jec
         do i=isc,iec
            wrk1_2d(i,j) = wrk1_2d(i,j) &
-                           + wrk1(i,j,k)*Thickness%rho_dzt(i,j,k,tau)*tendency(i,j,k)
+                           + wrk1(i,j,k)*tendency(i,j,k)
         enddo
      enddo
   enddo
