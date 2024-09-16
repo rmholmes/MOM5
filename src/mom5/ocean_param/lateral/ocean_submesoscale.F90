@@ -1280,7 +1280,7 @@ end subroutine ocean_submesoscale_init
       call compute_submeso_skewsion(Thickness, Dens, Time, T_prog)
   elseif(submeso_advect_flux) then
       if(submeso_advect_upwind) then  
-         call compute_submeso_upwind(Time, Dens, T_prog)
+         call compute_submeso_upwind(Thickness, Time, Dens, T_prog)
       elseif(submeso_advect_sweby) then 
          call compute_submeso_sweby(Thickness, Time, Dens, T_prog)
       endif 
@@ -2872,8 +2872,9 @@ end subroutine compute_flux_z
 !
 ! </DESCRIPTION>
 !
-subroutine compute_submeso_upwind(Time, Dens, T_prog)
+subroutine compute_submeso_upwind(Thickness, Time, Dens, T_prog)
 
+  type(ocean_thickness_type),   intent(in)    :: Thickness
   type(ocean_time_type),        intent(in)    :: Time
   type(ocean_density_type),     intent(in)    :: Dens
   type(ocean_prog_tracer_type), intent(inout) :: T_prog(:)

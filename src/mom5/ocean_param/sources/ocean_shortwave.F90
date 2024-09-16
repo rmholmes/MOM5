@@ -216,6 +216,11 @@ contains
          'W/m^2', missing_value=-1e10, range=(/-1.e10,1.e10/),                    &
          standard_name='downwelling_shortwave_flux_in_sea_water')
 
+    id_sw_heat_in_mld = register_diag_field ('ocean_model', 'sw_heat_in_mld',                   & 
+         Grid%tracer_axes(1:2), Time%model_time, 'penetrative shortwave heating averaged in mixed layer', &
+         'W/m^3', missing_value=-1e10, range=(/-1.e10,1.e10/),                    &
+         standard_name='downwelling_shortwave_flux_in_sea_water')
+
     id_irradiance = register_diag_field ('ocean_model', 'irradiance', &
          Grid%tracer_axes(1:3), Time%model_time, 'irradiance', &
          'W/m^2',missing_value=missing_value, range=(/-1e6,1e6/))
@@ -274,6 +279,7 @@ subroutine sw_source (Time, Thickness, Dens, T_prog, T_diag, swflx, swflx_vis, T
   real, dimension(isd:,jsd:,:),   intent(inout) :: sw_frac_zt
   real, dimension(isd:,jsd:,:),   intent(inout) :: opacity 
 
+  real, dimension(isc:iec,jsc:jec) :: tendency_in_mld
   integer :: i,j,k,tau
 
   if (.not. use_this_module) return 
@@ -346,6 +352,10 @@ subroutine sw_source (Time, Thickness, Dens, T_prog, T_diag, swflx, swflx_vis, T
 
   call diagnose_3d(Time, Grd, id_sw_frac, sw_frac_zt(:,:,:))
   call diagnose_3d(Time, Grd, id_sw_heat, Temp%wrk1(:,:,:))
+  if (id_sw_heat_in_mld > 0) then
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, Temp%wrk1(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_sw_heat_in_mld, tendency_in_mld(:,:))
+  endif
   call diagnose_3d(Time, Grd, id_irradiance, T_diag(index_irr)%field(:,:,:))
 
   call watermass_diag(Time, Temp, Dens)
@@ -420,13 +430,6 @@ subroutine watermass_diag_init(Time, Dens)
        Dens%neutralrho_axes(1:3), Time%model_time, 'penetrative shortwave heating binned to neutral density', &
        'W/m^2', missing_value=-1e10, range=(/-1.e20,1.e20/))
   if(id_sw_heat_on_nrho > 0) compute_watermass_diag = .true.
-
-  id_sw_heat_in_mld = register_diag_field ('ocean_model', 'sw_heat_in_mld',                   & 
-         Grid%tracer_axes(1:2), Time%model_time, 'penetrative shortwave heating averaged in mixed layer', &
-         'W/m^3', missing_value=-1e10, range=(/-1.e10,1.e10/),                    &
-         standard_name='downwelling_shortwave_flux_in_sea_water')
-  if(id_sw_heat_in_mld > 0) compute_watermass_diag = .true.
-
 
   id_neut_rho_sw = register_diag_field ('ocean_model', 'neut_rho_sw',&
     Grd%tracer_axes(1:3), Time%model_time,                           &
@@ -509,7 +512,6 @@ subroutine watermass_diag(Time, Temp, Dens)
 
   integer :: i,j,k,tau
   real, dimension(isd:ied,jsd:jed) :: eta_tend
-  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
 
   if (.not.module_is_initialized) then 
     call mpp_error(FATAL, &
@@ -545,10 +547,6 @@ subroutine watermass_diag(Time, Temp, Dens)
   call diagnose_3d_rho(Time, Dens, id_wdian_rho_sw_on_nrho, wrk3)
   call diagnose_3d_rho(Time, Dens, id_tform_rho_sw_on_nrho, wrk4)
   call diagnose_3d_rho(Time, Dens, id_sw_heat_on_nrho, Temp%wrk1)
-  if (id_sw_heat_in_mld > 0) then
-      call compute_budget_mld(Time, Thickness, Dens, T_prog, Temp%wrk1(:,:,:), tendency_in_mld(:,:))
-      call diagnose_2d(Time, Grd, id_sw_heat_in_mld, tendency_in_mld(:,:))
-  endif
 
   if(id_eta_tend_sw_pen > 0 .or. id_eta_tend_sw_pen_glob > 0) then
       eta_tend(:,:) = 0.0
