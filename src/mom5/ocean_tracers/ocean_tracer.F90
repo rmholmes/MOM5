@@ -217,6 +217,7 @@ use ocean_types_mod,            only: ocean_public_type, ocean_density_type, oce
 use ocean_types_mod,            only: ocean_lagrangian_type, ocean_velocity_type, blob_diag_type
 use ocean_util_mod,             only: write_timestamp, diagnose_2d, diagnose_3d, diagnose_sum, write_chksum_3d
 use ocean_tracer_util_mod,      only: diagnose_3d_rho
+use ocean_tracer_diag_mod,      only: compute_budget_mld
 use ocean_vert_mix_mod,         only: vert_diffuse, vert_diffuse_implicit
 use ocean_workspace_mod,        only: wrk1, wrk2, wrk3, wrk4, wrk5, wrk6, wrk1_2d
 
@@ -327,6 +328,7 @@ integer, allocatable, dimension(:) :: id_tendency_conc
 integer, allocatable, dimension(:) :: id_tendency_concL
 integer, allocatable, dimension(:) :: id_tendency_concT
 integer, allocatable, dimension(:) :: id_tendency
+integer, allocatable, dimension(:) :: id_tendency_in_mld
 integer, allocatable, dimension(:) :: id_tendency_on_nrho
 integer, allocatable, dimension(:) :: id_tendencyL
 integer, allocatable, dimension(:) :: id_tendencyT
@@ -774,6 +776,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   allocate( id_prog_on_depth  (num_prog_tracers) )
   allocate( id_tendency_conc  (num_prog_tracers) )
   allocate( id_tendency       (num_prog_tracers) )
+  allocate( id_tendency_in_mld(num_prog_tracers) )
   allocate( id_tendency_on_nrho(num_prog_tracers) )
   allocate( id_tendency_expl  (num_prog_tracers) )
   allocate( id_surf_tracer    (num_prog_tracers) )
@@ -809,6 +812,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   id_prog_on_depth(:)  = -1
   id_tendency_conc(:)  = -1
   id_tendency(:)       = -1
+  id_tendency_in_mld(:)= -1
   id_tendency_on_nrho(:)= -1
   id_tendency_expl(:)  = -1
   id_surf_tracer(:)    = -1
@@ -1401,6 +1405,10 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
            trim(prog_name)//'_tendency', Grd%tracer_axes(1:3),                &
            Time%model_time, 'time tendency for tracer '//trim(prog_longname), &
            trim(T_prog(n)%flux_units), missing_value=missing_value, range=range_array)
+      id_tendency_in_mld(n) = register_diag_field ('ocean_model',                    & 
+           trim(prog_name)//'_tendency_in_mld', Grd%tracer_axes(1:2),                &
+           Time%model_time, 'time tendency averged in mixed layer for tracer '//trim(prog_longname), &
+           trim(T_prog(n)%flux_units), missing_value=missing_value, range=range_array)
       id_eta_smooth(n) = register_diag_field ('ocean_model',                            &
            trim(prog_name)//'_eta_smooth', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother for ' // trim(prog_name),                 &
@@ -1426,6 +1434,10 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
            trim(T_prog(n)%units)//' per second', missing_value=missing_value, range=(/-1.e10,1e10/))
       id_tendency(n) = register_diag_field ('ocean_model',                              &
            trim(prog_name)//'_tendency', Grd%tracer_axes(1:3),                          &
+           Time%model_time, 'time tendency for tracer '//trim(prog_longname),           &
+           trim(T_prog(n)%flux_units), missing_value=missing_value)
+      id_tendency_in_mld(n) = register_diag_field ('ocean_model',                              &
+           trim(prog_name)//'_tendency_in_mld', Grd%tracer_axes(1:2),                          &
            Time%model_time, 'time tendency for tracer '//trim(prog_longname),           &
            trim(T_prog(n)%flux_units), missing_value=missing_value)
       id_eta_smooth(n) = register_diag_field ('ocean_model',                                 &
@@ -3853,6 +3865,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
   type(ocean_density_type),       intent(in)    :: Dens
   logical,                        intent(in)    :: use_blobs 
 
+  real, dimension(isc:iec,jsc:jec) :: tendency_in_mld
   integer :: i,j,k,kbot,n
   integer :: taum1,tau,taup1
   real    :: total_tracer
@@ -3942,7 +3955,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
      endif
 
      ! time tendency for tracer mass per horizontal area 
-     if (id_tendency(n) > 0 .or. id_tendency_on_nrho(n) > 0) then
+     if (id_tendency(n) > 0 .or. id_tendency_in_mld(n) > 0 .or. id_tendency_on_nrho(n) > 0) then
          wrk1(:,:,:) = 0.0
          do k=1,nk
             do j=jsc,jec
@@ -3956,6 +3969,10 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
          enddo
          if (id_tendency(n) > 0) then
             call diagnose_3d(Time, Grd, id_tendency(n),wrk1(:,:,:))
+         endif
+         if (id_tendency_in_mld(n) > 0) then
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, wrk1(:,:,:), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_tendency_in_mld(n), tendency_in_mld(:,:))
          endif
          if (id_tendency_on_nrho(n) > 0) then
             call diagnose_3d_rho(Time, Dens, id_tendency_on_nrho(n),wrk1)

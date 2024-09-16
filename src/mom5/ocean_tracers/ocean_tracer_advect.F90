@@ -819,7 +819,7 @@ subroutine advection_diag_init (Time, Dens, T_prog)
                    Grd%tracer_axes(1:3), Time%model_time, 'cp*rho*dzt*advection tendency',             &
                    trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_in_mld(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_in_mld', &
-                   Grd%tracer_axes(1:2), Time%model_time, 'cp*rho*dzt/mld*advection tendency',             &
+                   Grd%tracer_axes(1:2), Time%model_time, 'cp*rho*dzt/mld*advection tendency averaged in mixed layer',   &
                    trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_on_nrho', &
                    Dens%neutralrho_axes(1:3), Time%model_time, 'cp*rho*dzt*advection tendency binned to neutral density',&
@@ -880,7 +880,7 @@ subroutine advection_diag_init (Time, Dens, T_prog)
                    Grd%tracer_axes(1:3), Time%model_time, 'rho*dzt*advection tendency',         &
                    'kg/(sec*m^2)', missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_in_mld(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_in_mld', &
-                   Grd%tracer_axes(1:2), Time%model_time, 'rho*dzt/mld*advection tendency',         &
+                   Grd%tracer_axes(1:2), Time%model_time, 'rho*dzt/mld*advection tendency averaged in mixed layer',  &
                    'kg/(sec*m^3)', missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_on_nrho', &
                    Dens%neutralrho_axes(1:3), Time%model_time, 'rho*dzt*advection tendency binned to neutral density',&
@@ -2115,7 +2115,7 @@ subroutine vert_advect_tracer(Time, Adv_vel, Dens, Thickness, T_prog, Tracer, nt
 
   integer :: tau, taum1
   integer :: i,j,k
-  real,dimension(isd:ied,jsd:jed)             :: advect_tendency_in_mld
+  real,dimension(isd:ied,jsd:jed)             :: tendency_in_mld
 
   if(zero_tracer_advect_vert) return 
 
@@ -2191,8 +2191,8 @@ subroutine vert_advect_tracer(Time, Adv_vel, Dens, Thickness, T_prog, Tracer, nt
          call diagnose_3d(Time, Grd, id_tracer_advection(ntracer), Tracer%conversion*advect_tendency(:,:,:))
       endif
       if(id_tracer_advection_in_mld(ntracer) > 0) then
-         call compute_budget_mld(Time, Thickness, Dens, T_prog, advect_tendency(:,:,:), advect_tendency_in_mld(:,:))
-         call diagnose_2d(Time, Grd, id_tracer_advection_in_mld(ntracer), Tracer%conversion*advect_tendency_in_mld(:,:))
+         call compute_budget_mld(Time, Thickness, Dens, T_prog, advect_tendency(:,:,:), tendency_in_mld(:,:))
+         call diagnose_2d(Time, Grd, id_tracer_advection_in_mld(ntracer), Tracer%conversion*tendency_in_mld(:,:))
       endif
       if(id_tracer_advection_on_nrho(ntracer) > 0) then
          call diagnose_3d_rho(Time, Dens, id_tracer_advection_on_nrho(ntracer), Tracer%conversion*advect_tendency)
