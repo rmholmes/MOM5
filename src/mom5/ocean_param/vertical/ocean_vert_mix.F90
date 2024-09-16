@@ -5280,7 +5280,7 @@ subroutine vert_diffuse_implicit_diag(Time, Thickness, Dens, T_prog, diff_cbt, w
   integer :: i, j, k, kp, kp1, nmix
 
   real :: dTdz, diffusivity
-  real,dimension(isc:iec,jsc:jec) :: tendency_in_mld
+  real,dimension(isd:ied,jsd:jed) :: tendency_in_mld
 
   tau   = Time%tau
   taup1 = Time%taup1
@@ -5339,6 +5339,7 @@ subroutine vert_diffuse_implicit_diag(Time, Thickness, Dens, T_prog, diff_cbt, w
          call diagnose_3d(Time, Grd, id_vdiffuse_sbc(n), wrk1(:,:,:)*T_prog(n)%conversion)
       endif
       if (id_vdiffuse_sbc_in_mld(n) > 0) then
+         tendency_in_mld(:,:) = 0.0
          call compute_budget_mld(Time, Thickness, Dens, T_prog, wrk1(:,:,:), tendency_in_mld(:,:))
          call diagnose_2d(Time, Grd, id_vdiffuse_sbc_in_mld(n), tendency_in_mld(:,:)*T_prog(n)%conversion)
       endif

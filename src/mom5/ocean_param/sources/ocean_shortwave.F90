@@ -279,7 +279,7 @@ subroutine sw_source (Time, Thickness, Dens, T_prog, T_diag, swflx, swflx_vis, T
   real, dimension(isd:,jsd:,:),   intent(inout) :: sw_frac_zt
   real, dimension(isd:,jsd:,:),   intent(inout) :: opacity 
 
-  real, dimension(isc:iec,jsc:jec) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
   integer :: i,j,k,tau
 
   if (.not. use_this_module) return 

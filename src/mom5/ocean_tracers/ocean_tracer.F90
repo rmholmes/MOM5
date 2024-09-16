@@ -3865,7 +3865,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
   type(ocean_density_type),       intent(in)    :: Dens
   logical,                        intent(in)    :: use_blobs 
 
-  real, dimension(isc:iec,jsc:jec) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
   integer :: i,j,k,kbot,n
   integer :: taum1,tau,taup1
   real    :: total_tracer
@@ -3971,6 +3971,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
             call diagnose_3d(Time, Grd, id_tendency(n),wrk1(:,:,:))
          endif
          if (id_tendency_in_mld(n) > 0) then
+            tendency_in_mld(:,:) = 0.0
             call compute_budget_mld(Time, Thickness, Dens, T_prog, wrk1(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_tendency_in_mld(n), tendency_in_mld(:,:))
          endif
