@@ -659,7 +659,7 @@ subroutine rivermix (Time, Thickness, Dens, T_prog, river, runoff, calving, &
   real, dimension(isd:,jsd:),     intent(in)     :: calving 
   real, dimension(isd:,jsd:,:,:), intent(inout)  :: diff_cbt
 
-  real, dimension(isc:iec,jsc:jec) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
   integer :: i,j,n,tau
   logical :: river_discharge  =.false.
   logical :: runoff_discharge =.false.
@@ -696,6 +696,7 @@ subroutine rivermix (Time, Thickness, Dens, T_prog, river, runoff, calving, &
             call diagnose_3d(Time, Grd, id_rivermix(n), T_prog(n)%wrk1(:,:,:)*T_prog(n)%conversion)
          endif
          if (id_rivermix_in_mld(n) > 0) then
+            tendency_in_mld(:,:) = 0.0
             call compute_budget_mld(Time, Thickness, Dens, T_prog, T_prog(n)%wrk1(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_rivermix_in_mld(n), tendency_in_mld(:,:)*T_prog(n)%conversion)
          endif
