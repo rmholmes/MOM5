@@ -205,7 +205,7 @@ use ocean_tempsalt_mod,         only: contemp_from_pottemp, pottemp_from_contemp
 use ocean_tpm_mod,              only: ocean_tpm_init
 use ocean_tpm_util_mod,         only: otpm_set_tracer_package
 use ocean_tracer_advect_mod,    only: horz_advect_tracer, vert_advect_tracer
-use ocean_tracer_diag_mod,      only: send_tracer_variance
+use ocean_tracer_diag_mod,      only: send_tracer_variance, compute_budget_mld
 use ocean_tracer_util_mod,      only: rebin_onto_rho, diagnose_mass_of_layer 
 use ocean_tracer_util_mod,      only: tracer_prog_chksum, tracer_diag_chksum, tracer_min_max
 use ocean_thickness_mod,        only: update_E_thickness
@@ -217,7 +217,6 @@ use ocean_types_mod,            only: ocean_public_type, ocean_density_type, oce
 use ocean_types_mod,            only: ocean_lagrangian_type, ocean_velocity_type, blob_diag_type
 use ocean_util_mod,             only: write_timestamp, diagnose_2d, diagnose_3d, diagnose_sum, write_chksum_3d
 use ocean_tracer_util_mod,      only: diagnose_3d_rho
-use ocean_tracer_diag_mod,      only: compute_budget_mld
 use ocean_vert_mix_mod,         only: vert_diffuse, vert_diffuse_implicit
 use ocean_workspace_mod,        only: wrk1, wrk2, wrk3, wrk4, wrk5, wrk6, wrk1_2d
 
@@ -3866,6 +3865,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
   logical,                        intent(in)    :: use_blobs 
 
   real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
   integer :: i,j,k,kbot,n
   integer :: taum1,tau,taup1
   real    :: total_tracer
@@ -3972,7 +3972,8 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
          endif
          if (id_tendency_in_mld(n) > 0) then
             tendency_in_mld(:,:) = 0.0
-            call compute_budget_mld(Time, Thickness, Dens, T_prog, wrk1(:,:,:), tendency_in_mld(:,:))
+            tendency_3d(:,:,:) = wrk1(:,:,:)
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_tendency_in_mld(n), tendency_in_mld(:,:))
          endif
          if (id_tendency_on_nrho(n) > 0) then
