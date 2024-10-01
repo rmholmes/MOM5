@@ -314,6 +314,7 @@ logical :: compute_watermass_diag = .false.
 logical :: used
 integer, allocatable, dimension(:) :: id_eta_smooth
 integer, allocatable, dimension(:) :: id_eta_smooth_on_nrho
+integer, allocatable, dimension(:) :: id_eta_smooth_in_mld
 integer, allocatable, dimension(:) :: id_pbot_smooth
 integer, allocatable, dimension(:) :: id_prog
 integer, allocatable, dimension(:) :: id_progT
@@ -767,6 +768,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
   allocate( T_prog            (num_prog_tracers) )
   allocate( id_eta_smooth     (num_prog_tracers) )
   allocate( id_eta_smooth_on_nrho(num_prog_tracers) )
+  allocate( id_eta_smooth_in_mld(num_prog_tracers) )
   allocate( id_pbot_smooth    (num_prog_tracers) )
   allocate( id_prog           (num_prog_tracers) )
   allocate( id_prog_explicit  (num_prog_tracers) )
@@ -803,6 +805,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
 
   id_eta_smooth(:)     = -1
   id_eta_smooth_on_nrho(:)= -1
+  id_eta_smooth_in_mld(:)= -1
   id_pbot_smooth(:)    = -1
   id_prog(:)           = -1
   id_prog_explicit(:)  = -1
@@ -1413,6 +1416,11 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
            Time%model_time, 'surface smoother for ' // trim(prog_name),                 &
            trim(T_prog(n)%flux_units),                                                  &
            missing_value=missing_value, range=range_array)    
+      id_eta_smooth_in_mld(n) = register_diag_field ('ocean_model',                            &
+           trim(prog_name)//'_eta_smooth_in_mld', Grd%tracer_axes(1:2),                        &
+           Time%model_time, 'surface smoother averaged in mixed layer for ' // trim(prog_name),  &
+           trim(T_prog(n)%flux_units),                                                  &
+           missing_value=missing_value, range=range_array)    
       id_pbot_smooth(n) = register_diag_field ('ocean_model',                           &
            trim(prog_name)//'_pbot_smooth', Grd%tracer_axes(1  :2),                     &
            Time%model_time, 'bottom smoother for ' // trim(prog_name),                  &
@@ -1442,6 +1450,11 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
       id_eta_smooth(n) = register_diag_field ('ocean_model',                                 &
            trim(T_prog(n)%name)//'_eta_smooth', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother for ' // trim(T_prog(n)%name),                 &
+           trim(T_prog(n)%flux_units),                                                       &
+           missing_value=missing_value)    
+      id_eta_smooth_in_mld(n) = register_diag_field ('ocean_model',                                 &
+           trim(T_prog(n)%name)//'_eta_smooth_in_mld', Grd%tracer_axes(1:2),                        &
+           Time%model_time, 'surface smoother averaged in mixed layer for ' // trim(T_prog(n)%name),   &
            trim(T_prog(n)%flux_units),                                                       &
            missing_value=missing_value)    
       id_pbot_smooth(n) = register_diag_field ('ocean_model',                                &
@@ -2277,6 +2290,9 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
   integer   :: i, j, k, kbot, n
   integer   :: taum1, tau, taup1
 
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
+  
   integer :: stdoutunit 
   stdoutunit=stdout() 
 
@@ -2405,6 +2421,13 @@ subroutine update_ocean_tracer (Time, Dens, Adv_vel, Thickness, pme, diff_cbt, &
         if (id_eta_smooth(n)> 0) then
            call diagnose_2d(Time, Grd, id_eta_smooth(n), T_prog(n)%eta_smooth(:,:)*T_prog(n)%conversion)
         endif
+        if (id_eta_smooth_in_mld(n)> 0) then
+            tendency_in_mld(:,:) = 0.0
+            tendency_3d(:,:,:) = 0.0
+            tendency_3d(:,:,1) = T_prog(n)%eta_smooth(:,:)
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_eta_smooth_in_mld(n), tendency_in_mld(:,:)*T_prog(n)%conversion)
+        endif 
         if (id_eta_smooth_on_nrho(n)> 0) then
            wrk1(:,:,:) = 0.0
            k=1

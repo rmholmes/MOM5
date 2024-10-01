@@ -1599,7 +1599,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
 
        ! compute "flux adjustments" (e.g., surface tracer restoring, flux correction)
        call mpp_clock_begin(id_flux_adjust)
-       call flux_adjust(Time, T_diag(1:num_diag_tracers), Dens, Ext_mode, &
+       call flux_adjust(Time, T_diag(1:num_diag_tracers), Dens, Thickness, Ext_mode, &
                         T_prog(1:num_prog_tracers), Velocity, river, melt, pme)
 
        call mpp_clock_end(id_flux_adjust)
