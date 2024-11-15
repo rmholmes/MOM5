@@ -1457,7 +1457,7 @@ CONTAINS
 #endif
     LOGICAL :: average, phys_window, need_compute
     LOGICAL :: reduced_k_range, local_output
-    LOGICAL :: time_max, time_min, time_rms
+    LOGICAL :: time_max, time_min, time_rms, fwd_risavg
     LOGICAL :: missvalue_present
     LOGICAL, ALLOCATABLE, DIMENSION(:,:,:) :: oor_mask
     CHARACTER(len=256) :: err_msg_local
@@ -3046,7 +3046,7 @@ CONTAINS
 
     TYPE(time_type) :: middle_time
     LOGICAL :: time_max, time_min, reduced_k_range, missvalue_present
-    LOGICAL :: average, time_rms, need_compute, phys_window
+    LOGICAL :: average, time_rms, need_compute, phys_window, fwd_risavg
     INTEGER :: in_num, file_num, freq, units
     INTEGER :: b1,b2,b3,b4 ! size of buffer along x,y,z,and diurnal axes
     INTEGER :: i, j, k, m
@@ -3074,6 +3074,7 @@ CONTAINS
     file_num = output_fields(out_num)%output_file
     freq = files(file_num)%output_freq
     units = files(file_num)%output_units
+    fwd_risavg = output_fields(out_num)%fwd_risavg
 
     ! If average get size: Average intervals are last_output, next_output
     IF ( average ) THEN

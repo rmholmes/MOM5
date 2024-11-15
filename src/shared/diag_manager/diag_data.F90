@@ -403,6 +403,9 @@ MODULE diag_data_mod
   !   <DATA NAME="time_rms" TYPE="LOGICAL">
   !     .TRUE. if the output field is the rms.  In this case, time_average will also be true.
   !   </DATA>
+  !   <DATA NAME="fwd_risavg" TYPE="LOGICAL">
+  !     .TRUE. if the output field is a rising average weighted from 0 to 1. time_average will also be true.
+  !   </DATA>
   !   <DATA NAME="time_ops" TYPE="LOGICAL">
   !     .TRUE. if any of time_min, time_max, time_rms, or time_average is true
   !   </DATA>
@@ -484,6 +487,7 @@ MODULE diag_data_mod
      CHARACTER(len=128) :: output_name
      LOGICAL :: time_average ! true if the output field is averaged over time interval
      LOGICAL :: time_rms ! true if the output field is the rms.  If true, then time_average is also
+     LOGICAL :: fwd_risavg ! true if the output field is a rising average weighted from 0 to 1. time_average is true
      LOGICAL :: static
      LOGICAL :: time_max ! true if the output field is maximum over time interval
      LOGICAL :: time_min ! true if the output field is minimum over time interval
