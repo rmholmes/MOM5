@@ -643,13 +643,17 @@ integer :: id_tau_curl       =-1
 integer :: id_ekman_we       =-1
 integer :: id_ekman_heat     =-1
 integer :: id_swflx          =-1
+integer :: id_swflx_in_mld   =-1
 integer :: id_swflx_vis      =-1
 
 integer :: id_lw_heat            =-1
 integer :: id_sens_heat          =-1
+integer :: id_lw_heat_in_mld     =-1
+integer :: id_sens_heat_in_mld   =-1
 integer :: id_fprec_melt_heat    =-1
 integer :: id_calving_melt_heat  =-1
 integer :: id_evap_heat          =-1
+integer :: id_evap_heat_in_mld   =-1
 
 integer :: id_fprec          =-1
 integer :: id_lprec          =-1
@@ -1944,6 +1948,26 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
 
   id_sens_heat = register_diag_field('ocean_model','sens_heat', Grd%tracer_axes(1:2),&
        Time%model_time, 'sensible heat into ocean (<0 cools ocean)', 'W/m^2' ,      &
+       missing_value=missing_value,range=(/-1.e10,1.e10/),                          &
+       standard_name='surface_downward_sensible_heat_flux')   
+
+  id_swflx_in_mld = register_diag_field('ocean_model','swflx_in_mld', Grd%tracer_axes(1:2),  &
+       Time%model_time, 'shortwave flux into ocean (>0 heats ocean) averaged in mixed layer', 'W/m^2', &
+       missing_value=missing_value,range=(/-1.e10,1.e10/),                     &
+       standard_name='surface_net_downward_shortwave_flux')   
+
+  id_evap_heat_in_mld = register_diag_field('ocean_model','evap_heat_in_mld', Grd%tracer_axes(1:2),&
+       Time%model_time, 'latent heat flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2',     &
+       missing_value=missing_value,range=(/-1e10,1e10/),                             &
+       standard_name='surface_downward_latent_heat_flux')
+
+  id_lw_heat_in_mld = register_diag_field('ocean_model','lw_heat_in_mld', Grd%tracer_axes(1:2),&
+       Time%model_time, 'longwave flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2' ,  &
+       missing_value=missing_value,range=(/-1.e10,1.e10/),                      &
+       standard_name='surface_net_downward_longwave_flux' )   
+
+  id_sens_heat_in_mld = register_diag_field('ocean_model','sens_heat_in_mld', Grd%tracer_axes(1:2),&
+       Time%model_time, 'sensible heat into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2' ,      &
        missing_value=missing_value,range=(/-1.e10,1.e10/),                          &
        standard_name='surface_downward_sensible_heat_flux')   
 
@@ -5657,6 +5681,14 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! shortwave flux (W/m2)
   call diagnose_2d(Time, Grd, id_swflx, swflx(:,:))
+  if (id_swflx_in_mld > 0)
+      tendency_in_mld(:,:) = 0.0
+      tendency_3d(:,:,:) = 0.0
+      tendency_3d(:,:,1) = swflx(:,:)
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_swflx_in_mld, tendency_in_mld(:,:))
+  endif         
+
   ! total shortwave heat transport (Watts)
   call diagnose_sum(Time, Grd, Dom, id_total_ocean_swflx, swflx, 1e-15)
   ! swflx impacts on water mass transformation in neutral density classes 
@@ -5679,7 +5711,7 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
 
   ! evaporative heat flux (W/m2) (<0 cools ocean)
-  if (id_evap_heat > 0) then
+  if (id_evap_heat > 0 .or. id_evap_heat_in_mld > 0) then
       tmp_flux=0.0
       do j=jsc_bnd,jec_bnd
          do i=isc_bnd,iec_bnd
@@ -5688,7 +5720,16 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
             tmp_flux(ii,jj) = -latent_heat_vapor(ii,jj)*Ice_ocean_boundary%q_flux(i,j)
          enddo
       enddo
-      call diagnose_2d(Time, Grd, id_evap_heat, tmp_flux(:,:))
+      if (id_evap_heat > 0)
+          call diagnose_2d(Time, Grd, id_evap_heat, tmp_flux(:,:))
+      endif
+      if (id_evap_heat_in_mld > 0)
+          tendency_in_mld(:,:) = 0.0
+          tendency_3d(:,:,:) = 0.0
+          tendency_3d(:,:,1) = tmp_flux(:,:)
+          call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+          call diagnose_2d(Time, Grd, id_evap_heat_in_mld, tendency_in_mld(:,:))
+      endif         
   endif
   ! total evaporative heating (Watts) 
   if (id_total_ocean_evap_heat > 0) then
@@ -5720,6 +5761,14 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! longwave heat flux (W/m2)
   call diagnose_2d(Time, Grd, id_lw_heat, longwave(:,:))
+  if (id_lw_heat_in_mld > 0)
+      tendency_in_mld(:,:) = 0.0
+      tendency_3d(:,:,:) = 0.0
+      tendency_3d(:,:,1) = longwave(:,:)
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_lw_heat_in_mld, tendency_in_mld(:,:))
+  endif         
+
   ! total longwave heating (Watts) 
   call diagnose_sum(Time, Grd, Dom, id_total_ocean_lw_heat, longwave, 1e-15)
   ! longwave impacts on water mass transformation in neutral density classes 
@@ -5770,6 +5819,14 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! sensible heat flux (W/m2)
   call diagnose_2d(Time, Grd, id_sens_heat, sensible(:,:))
+  if (id_sens_heat_in_mld > 0)
+      tendency_in_mld(:,:) = 0.0
+      tendency_3d(:,:,:) = 0.0
+      tendency_3d(:,:,1) = sensible(:,:)
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_sens_heat_in_mld, tendency_in_mld(:,:))
+  endif         
+
   ! total sensible heat transport (Watts) 
   call diagnose_sum(Time, Grd, Dom, id_total_ocean_sens_heat, sensible, 1e-15)
   ! sensible heat impacts on water mass transformation in neutral density classes 
