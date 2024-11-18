@@ -666,6 +666,7 @@ integer :: id_melt           =-1
 integer :: id_evap           =-1
 integer :: id_pme_sbc        =-1
 integer :: id_pme_river      =-1
+integer :: id_pme_river_in_mld =-1
 integer :: id_pme_restore    =-1
 integer :: id_pme_eta_restore=-1
 integer :: id_pme_correct    =-1
@@ -1852,6 +1853,11 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
 
   id_pme_river= register_diag_field('ocean_model','pme_river', Grd%tracer_axes(1:2),           &
        Time%model_time, 'mass flux of precip-evap+river via sbc (liquid, frozen, evaporation)',&
+       '(kg/m^3)*(m/sec)', missing_value=missing_value,range=(/-1e6,1e6/),                     &
+       standard_name='water_flux_into_sea_water')
+
+  id_pme_river_in_mld= register_diag_field('ocean_model','pme_river_in_mld', Grd%tracer_axes(1:2),           &
+       Time%model_time, 'mass flux of precip-evap+river via sbc (liquid, frozen, evaporation) averaged in mixed layer',&
        '(kg/m^3)*(m/sec)', missing_value=missing_value,range=(/-1e6,1e6/),                     &
        standard_name='water_flux_into_sea_water')
 
@@ -5239,6 +5245,8 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
   real, dimension(isd:,jsd:),     intent(in) :: swflx_vis
 
   real, dimension(isd:ied,jsd:jed) :: tmp_flux
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
 
   integer :: i,j,k 
   integer :: ii, jj
@@ -5913,7 +5921,16 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
   if (id_pme_river > 0) then
      call diagnose_2d(Time, Grd, id_pme_river, pme(:,:) + river(:,:))
   endif
-  
+
+  ! total mass flux per area from pme and river (kg/(m2*sec))  
+  if (id_pme_river_in_mld > 0) then
+     tendency_in_mld(:,:) = 0.0
+     tendency_3d(:,:,:) = 0.0
+     tendency_3d(:,:,1) = pme(:,:) + river(:,:)
+     call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+     call diagnose_2d(Time, Grd, id_pme_river_in_mld, tendency_in_mld(:,:))
+  endif
+
   !ape work from E-P+R: pme_river*g*betasfc2*So/rho0  
   if(id_net_sfc_workemp > 0) then
      call diagnose_2d(Time, Grd, id_net_sfc_workemp,        &
