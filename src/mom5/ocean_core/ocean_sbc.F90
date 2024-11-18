@@ -5681,7 +5681,7 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! shortwave flux (W/m2)
   call diagnose_2d(Time, Grd, id_swflx, swflx(:,:))
-  if (id_swflx_in_mld > 0)
+  if (id_swflx_in_mld > 0) then
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
       tendency_3d(:,:,1) = swflx(:,:)
@@ -5720,10 +5720,10 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
             tmp_flux(ii,jj) = -latent_heat_vapor(ii,jj)*Ice_ocean_boundary%q_flux(i,j)
          enddo
       enddo
-      if (id_evap_heat > 0)
+      if (id_evap_heat > 0) then
           call diagnose_2d(Time, Grd, id_evap_heat, tmp_flux(:,:))
       endif
-      if (id_evap_heat_in_mld > 0)
+      if (id_evap_heat_in_mld > 0) then
           tendency_in_mld(:,:) = 0.0
           tendency_3d(:,:,:) = 0.0
           tendency_3d(:,:,1) = tmp_flux(:,:)
@@ -5761,7 +5761,7 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! longwave heat flux (W/m2)
   call diagnose_2d(Time, Grd, id_lw_heat, longwave(:,:))
-  if (id_lw_heat_in_mld > 0)
+  if (id_lw_heat_in_mld > 0) then
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
       tendency_3d(:,:,1) = longwave(:,:)
@@ -5819,7 +5819,7 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
 
   ! sensible heat flux (W/m2)
   call diagnose_2d(Time, Grd, id_sens_heat, sensible(:,:))
-  if (id_sens_heat_in_mld > 0)
+  if (id_sens_heat_in_mld > 0) then
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
       tendency_3d(:,:,1) = sensible(:,:)
