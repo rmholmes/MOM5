@@ -627,6 +627,7 @@ integer :: id_vstoke          =-1
 integer :: id_wavlen          =-1
 
 integer :: id_net_sfc_heating       =-1
+integer :: id_net_sfc_heating_in_mld =-1
 integer :: id_total_net_sfc_heating =-1
 
 integer :: id_net_sfc_workq       =-1
@@ -2403,6 +2404,11 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
          id_net_sfc_heating = register_diag_field('ocean_model','net_sfc_heating',                &
               Grd%tracer_axes(1:2),                                                               &
               Time%model_time, 'surface ocean heat flux coming through coupler and mass transfer',&
+              'Watts/m^2' ,                                                                       &
+              missing_value=missing_value,range=(/-1.e4,1.e4/))
+         id_net_sfc_heating_in_mld = register_diag_field('ocean_model','net_sfc_heating_in_mld',  &
+              Grd%tracer_axes(1:2),                                                               &
+              Time%model_time, 'surface ocean heat flux coming through coupler and mass transfer averaged in mixed layer',&
               'Watts/m^2' ,                                                                       &
               missing_value=missing_value,range=(/-1.e4,1.e4/))
          id_net_sfc_workq = register_diag_field('ocean_model','net_sfc_workq',                        &
@@ -5616,7 +5622,7 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
   ! the frozen precip is typically best approximated to be at 0C, rather than SST. But
   ! we diagnose the contribution in this manner in order to agree with the prognostic model
   ! methods.  
-  if(id_net_sfc_heating > 0) then 
+  if(id_net_sfc_heating > 0 .or. id_net_sfc_heating_in_mld > 0) then 
       wrk1_2d(:,:) = 0.0
       do j=jsc,jec
          do i=isc,iec
@@ -5633,7 +5639,16 @@ subroutine ocean_sbc_diag(Time, Velocity, Thickness, Dens, T_prog, Ice_ocean_bou
                    )*T_prog(index_temp)%tpme(i,j))
          enddo
       enddo
-      call diagnose_2d(Time, Grd, id_net_sfc_heating, wrk1_2d(:,:))
+      if (id_net_sfc_heating > 0) then
+         call diagnose_2d(Time, Grd, id_net_sfc_heating, wrk1_2d(:,:))
+      endif
+      if (id_net_sfc_heating_in_mld > 0) then
+         tendency_in_mld(:,:) = 0.0
+         tendency_3d(:,:,:) = 0.0
+         tendency_3d(:,:,1) = wrk1_2d(:,:)
+         call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+         call diagnose_2d(Time, Grd, id_net_sfc_heating_in_mld, tendency_in_mld(:,:))
+      endif
   endif
   
   ! net_surface_heating*g*alphasfc2/rho0/Cp  
