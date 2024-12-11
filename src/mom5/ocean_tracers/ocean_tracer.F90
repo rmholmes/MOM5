@@ -1416,8 +1416,8 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
            trim(T_prog(n)%flux_units), missing_value=missing_value, range=range_array)
       id_tracer_in_mld(n) = register_diag_field ('ocean_model',                    & 
            trim(prog_name)//'_in_mld', Grd%tracer_axes(1:2),                &
-           Time%model_time, 'tracer averaged in mixed layer for tracer '//trim(prog_longname), &
-           trim(T_prog(n)%units), missing_value=missing_value, range=range_array)
+           Time%model_time, 'tracer averaged in mixed layer * rho for tracer '//trim(prog_longname), &
+           trim(T_prog(n)%units)//' kg m-3', missing_value=missing_value, range=range_array)
       id_eta_smooth(n) = register_diag_field ('ocean_model',                            &
            trim(prog_name)//'_eta_smooth', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother for ' // trim(prog_name),                 &
@@ -1456,8 +1456,8 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
            trim(T_prog(n)%flux_units), missing_value=missing_value)
       id_tracer_in_mld(n) = register_diag_field ('ocean_model',                              &
            trim(prog_name)//'_in_mld', Grd%tracer_axes(1:2),                          &
-           Time%model_time, 'tracer averaged in mixed layer for tracer '//trim(prog_longname),           &
-           trim(T_prog(n)%units), missing_value=missing_value)
+           Time%model_time, 'tracer averaged in mixed layer * rho for tracer '//trim(prog_longname),           &
+           trim(T_prog(n)%units)//' kg m-3', missing_value=missing_value)
       id_eta_smooth(n) = register_diag_field ('ocean_model',                                 &
            trim(T_prog(n)%name)//'_eta_smooth', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother for ' // trim(T_prog(n)%name),                 &
@@ -4020,7 +4020,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
          do k=1,nk
             do j=jsc,jec
                do i=isc,iec
-                  wrk1(i,j,k) = T_prog(n)%field(i,j,k,tau)
+                  wrk1(i,j,k) = T_prog(n)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
                enddo
             enddo
          enddo
