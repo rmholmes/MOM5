@@ -1863,7 +1863,7 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
 
   id_pme_river_in_mld= register_diag_field('ocean_model','pme_river_in_mld', Grd%tracer_axes(1:2),           &
        Time%model_time, 'mass flux of precip-evap+river via sbc (liquid, frozen, evaporation) averaged in mixed layer',&
-       '(kg/m^3)*(m/sec)', missing_value=missing_value,range=(/-1e6,1e6/),                     &
+       '(kg/m^3)*(m/sec)/m', missing_value=missing_value,range=(/-1e6,1e6/),                     &
        standard_name='water_flux_into_sea_water')
 
   id_net_sfc_workemp = register_diag_field('ocean_model','net_sfc_workEmP',                        &
@@ -1953,22 +1953,22 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
        standard_name='surface_downward_sensible_heat_flux')   
 
   id_swflx_in_mld = register_diag_field('ocean_model','swflx_in_mld', Grd%tracer_axes(1:2),  &
-       Time%model_time, 'shortwave flux into ocean (>0 heats ocean) averaged in mixed layer', 'W/m^2', &
+       Time%model_time, 'shortwave flux into ocean (>0 heats ocean) averaged in mixed layer', 'W/m^3', &
        missing_value=missing_value,range=(/-1.e10,1.e10/),                     &
        standard_name='surface_net_downward_shortwave_flux')   
 
   id_evap_heat_in_mld = register_diag_field('ocean_model','evap_heat_in_mld', Grd%tracer_axes(1:2),&
-       Time%model_time, 'latent heat flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2',     &
+       Time%model_time, 'latent heat flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^3',     &
        missing_value=missing_value,range=(/-1e10,1e10/),                             &
        standard_name='surface_downward_latent_heat_flux')
 
   id_lw_heat_in_mld = register_diag_field('ocean_model','lw_heat_in_mld', Grd%tracer_axes(1:2),&
-       Time%model_time, 'longwave flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2' ,  &
+       Time%model_time, 'longwave flux into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^3' ,  &
        missing_value=missing_value,range=(/-1.e10,1.e10/),                      &
        standard_name='surface_net_downward_longwave_flux' )   
 
   id_sens_heat_in_mld = register_diag_field('ocean_model','sens_heat_in_mld', Grd%tracer_axes(1:2),&
-       Time%model_time, 'sensible heat into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^2' ,      &
+       Time%model_time, 'sensible heat into ocean (<0 cools ocean) averaged in mixed layer', 'W/m^3' ,      &
        missing_value=missing_value,range=(/-1.e10,1.e10/),                          &
        standard_name='surface_downward_sensible_heat_flux')   
 
@@ -2409,7 +2409,7 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
          id_net_sfc_heating_in_mld = register_diag_field('ocean_model','net_sfc_heating_in_mld',  &
               Grd%tracer_axes(1:2),                                                               &
               Time%model_time, 'surface ocean heat flux coming through coupler and mass transfer averaged in mixed layer',&
-              'Watts/m^2' ,                                                                       &
+              'Watts/m^3' ,                                                                       &
               missing_value=missing_value,range=(/-1.e4,1.e4/))
          id_net_sfc_workq = register_diag_field('ocean_model','net_sfc_workq',                        &
               Grd%tracer_axes(1:2),                                                               &
