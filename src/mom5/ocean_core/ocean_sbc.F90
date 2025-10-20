@@ -594,6 +594,7 @@ integer, allocatable, dimension(:) :: id_stf_calving
 integer, allocatable, dimension(:) :: id_stf_pme
 integer, allocatable, dimension(:) :: id_stf_pme_on_nrho
 integer, allocatable, dimension(:) :: id_stf_pme_in_mld
+integer, allocatable, dimension(:) :: id_pme_river_times_tracer_in_mld
 integer, allocatable, dimension(:) :: id_stf_prec
 integer, allocatable, dimension(:) :: id_stf_evap
 integer, allocatable, dimension(:) :: id_trunoff

@@ -481,6 +481,7 @@ use ocean_types_mod,        only: ocean_adv_vel_type, ocean_prog_tracer_type
 use ocean_types_mod,        only: ocean_lagrangian_type
 use ocean_util_mod,         only: write_timestamp, diagnose_2d, diagnose_2d_u, diagnose_2d_en, write_chksum_2d
 use ocean_workspace_mod,    only: wrk1_2d, wrk2_2d, wrk3_2d, wrk4_2d, wrk1_v2d, wrk2_v2d, wrk1
+use ocean_tracer_diag_mod,    only: compute_budget_mld
 
 implicit none
 
@@ -2436,9 +2437,9 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
   real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
   real, dimension(isd:ied,jsd:jed,1:nk) :: tracer
 
-  integer  :: num_prog_tracers, index_temp, index_salt
+  integer  :: num_prog_tracers, index_temp, index_salt, n
 
-  integer  :: tau, taup1,
+  integer  :: tau, taup1
   integer  :: i,j,k,km1
   real     :: eta_global
 
@@ -2713,7 +2714,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
             tendency_3d(:,:,1) = wrk1_2d(:,:)
             tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
             call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
-            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
        endif
   endif 
 
