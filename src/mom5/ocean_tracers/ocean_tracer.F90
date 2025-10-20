@@ -1413,7 +1413,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
       id_tendency_in_mld(n) = register_diag_field ('ocean_model',                    & 
            trim(prog_name)//'_tendency_in_mld', Grd%tracer_axes(1:2),                &
            Time%model_time, 'time tendency averged in mixed layer for tracer '//trim(prog_longname), &
-           trim(T_prog(n)%flux_units), missing_value=missing_value, range=range_array)
+           trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value, range=range_array)
       id_tracer_in_mld(n) = register_diag_field ('ocean_model',                    & 
            trim(prog_name)//'_in_mld', Grd%tracer_axes(1:2),                &
            Time%model_time, 'tracer averaged in mixed layer * rho for tracer '//trim(prog_longname), &
@@ -1426,7 +1426,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
       id_eta_smooth_in_mld(n) = register_diag_field ('ocean_model',                            &
            trim(prog_name)//'_eta_smooth_in_mld', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother averaged in mixed layer for ' // trim(prog_name),  &
-           trim(T_prog(n)%flux_units),                                                  &
+           trim(T_prog(n)%flux_units)//'/m',                                                  &
            missing_value=missing_value, range=range_array)    
       id_pbot_smooth(n) = register_diag_field ('ocean_model',                           &
            trim(prog_name)//'_pbot_smooth', Grd%tracer_axes(1  :2),                     &
@@ -1453,7 +1453,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
       id_tendency_in_mld(n) = register_diag_field ('ocean_model',                              &
            trim(prog_name)//'_tendency_in_mld', Grd%tracer_axes(1:2),                          &
            Time%model_time, 'time tendency averaged in mixed layer for tracer '//trim(prog_longname),           &
-           trim(T_prog(n)%flux_units), missing_value=missing_value)
+           trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value)
       id_tracer_in_mld(n) = register_diag_field ('ocean_model',                              &
            trim(prog_name)//'_in_mld', Grd%tracer_axes(1:2),                          &
            Time%model_time, 'tracer averaged in mixed layer * rho for tracer '//trim(prog_longname),           &
@@ -1466,7 +1466,7 @@ function ocean_prog_tracer_init (Grid, Thickness, Ocean_options, Domain, Time, T
       id_eta_smooth_in_mld(n) = register_diag_field ('ocean_model',                                 &
            trim(T_prog(n)%name)//'_eta_smooth_in_mld', Grd%tracer_axes(1:2),                        &
            Time%model_time, 'surface smoother averaged in mixed layer for ' // trim(T_prog(n)%name),   &
-           trim(T_prog(n)%flux_units),                                                       &
+           trim(T_prog(n)%flux_units)//'/m',                                                       &
            missing_value=missing_value)    
       id_pbot_smooth(n) = register_diag_field ('ocean_model',                                &
            trim(T_prog(n)%name)//'_pbot_smooth', Grd%tracer_axes(1:2),                       &

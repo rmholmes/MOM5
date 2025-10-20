@@ -891,7 +891,7 @@ ierr = check_nml_error(io_status,'ocean_vert_kpp_mom4p1_nml')
                      missing_value=missing_value, range=(/-1.e10,1.e10/))
         id_nonlocal_in_mld(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_nonlocal_KPP_in_mld', &
                      Grd%tracer_axes(1:2), Time%model_time,                                         &
-                     'cp*rho*dzt*nonlocal tendency from KPP averaged in mixed layer', trim(T_prog(n)%flux_units),           &
+                     'cp*rho*dzt*nonlocal tendency from KPP averaged in mixed layer', trim(T_prog(n)%flux_units)//'/m',           &
                      missing_value=missing_value, range=(/-1.e10,1.e10/))
         id_nonlocal_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_nonlocal_KPP_on_nrho', &
                      Dens%neutralrho_axes(1:3), Time%model_time,                                         &
@@ -908,7 +908,7 @@ ierr = check_nml_error(io_status,'ocean_vert_kpp_mom4p1_nml')
                      missing_value=missing_value, range=(/-1.e10,1.e10/))
         id_nonlocal_in_mld(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_nonlocal_KPP_in_mld', &
                      Grd%tracer_axes(1:2), Time%model_time,                                         &
-                     'rho*dzt*nonlocal tendency from KPP averaged in mixed layer', trim(T_prog(n)%flux_units),              &
+                     'rho*dzt*nonlocal tendency from KPP averaged in mixed layer', trim(T_prog(n)%flux_units)//'/m',              &
                      missing_value=missing_value, range=(/-1.e10,1.e10/))
         id_nonlocal_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_nonlocal_KPP_on_nrho', &
                      Dens%neutralrho_axes(1:3), Time%model_time,                                         &

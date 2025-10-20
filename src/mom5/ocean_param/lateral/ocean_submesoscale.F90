@@ -1084,7 +1084,7 @@ contains
                 trim(T_prog(n)%name)//'_submeso_in_mld',                        &              
                 Grd%tracer_axes(1:2), Time%model_time,                   &
                 'rho*dzt*cp*submesoscale tendency (heating) averaged in mixed layer',            &
-                trim(T_prog(n)%flux_units), missing_value=missing_value, &
+                trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value, &
                 range=(/-1.e10,1.e10/))
            id_submeso_on_nrho(n) = register_diag_field ('ocean_model',   &
                 trim(T_prog(n)%name)//'_submeso_on_nrho',                &
@@ -1162,7 +1162,7 @@ contains
                 trim(T_prog(n)%name)//'_submeso_in_mld',                           &
                 Grd%tracer_axes(1:2), Time%model_time,                      &
                 'rho*dzt*submesoscale tendency averaged in mixed layer for '//trim(T_prog(n)%name), &
-                trim(T_prog(n)%flux_units), missing_value=missing_value,    &
+                trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value,    &
                 range=(/-1.e10,1.e10/))
            id_submeso_on_nrho(n) = register_diag_field ('ocean_model',      &
                 trim(T_prog(n)%name)//'_submeso_on_nrho',                   &

@@ -1172,7 +1172,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
                                'neutral_diffusion_in_mld_'//trim(T_prog(n)%name),                &
                                Grd%tracer_axes(1:2), Time%model_time,                     &
                                'rho*dzt*cp*explicit neutral diffusion tendency averaged in mixed layer (heating)',&
-                               trim(T_prog(n)%flux_units), missing_value=missing_value,   &
+                               trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value,   &
                                range=(/-1.e10,1.e10/))
        id_neutral_physics_gm(n) = register_diag_field ('ocean_model',                   &
                                'neutral_gm_'//trim(T_prog(n)%name),                     &
@@ -1190,7 +1190,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
                                'neutral_gm_in_mld_'//trim(T_prog(n)%name),                     &
                                Grd%tracer_axes(1:2), Time%model_time,                   &
                                'rho*dzt*cp*GM stirring averaged in mixed layer (heating)',     &
-                               trim(T_prog(n)%flux_units), missing_value=missing_value, &
+                               trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value, &
                                range=(/-1.e10,1.e10/))
      else 
        id_neutral_physics_ndiffuse(n) = register_diag_field ('ocean_model',                             &
@@ -1209,7 +1209,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
                                'neutral_diffusion_in_mld_'//trim(T_prog(n)%name),                              &
                                Grd%tracer_axes(1:2), Time%model_time,                                   &
                                'rho*dzt*explicit neutral diffusion tendency averaged in mixed layer for '//trim(T_prog(n)%name),&
-                               trim(T_prog(n)%flux_units), missing_value=missing_value,                 &
+                               trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value,                 &
                                range=(/-1.e10,1.e10/))
        id_neutral_physics_gm(n) = register_diag_field ('ocean_model',                    &
                                'neutral_gm_'//trim(T_prog(n)%name),                      &
@@ -1227,7 +1227,7 @@ subroutine ocean_nphysicsC_init(Grid, Domain, Time, Time_steps, Thickness, Dens,
                                'neutral_gm_in_mld_'//trim(T_prog(n)%name),                      &
                                Grd%tracer_axes(1:2), Time%model_time,                    &
                                'rho*dzt*GM stirring tendency averaged in mixed layer for '//trim(T_prog(n)%name),&
-                               trim(T_prog(n)%flux_units), missing_value=missing_value,  &
+                               trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value,  &
                                range=(/-1.e10,1.e10/))
      endif 
   enddo 

@@ -820,7 +820,7 @@ subroutine advection_diag_init (Time, Dens, T_prog)
                    trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_in_mld(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_in_mld', &
                    Grd%tracer_axes(1:2), Time%model_time, 'cp*rho*dzt/mld*advection tendency averaged in mixed layer',   &
-                   trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e18,1.e18/))
+                   trim(T_prog(n)%flux_units)//'/m', missing_value=missing_value, range=(/-1.e18,1.e18/))
       id_tracer_advection_on_nrho(n) = register_diag_field ('ocean_model', trim(T_prog(n)%name)//'_advection_on_nrho', &
                    Dens%neutralrho_axes(1:3), Time%model_time, 'cp*rho*dzt*advection tendency binned to neutral density',&
                    trim(T_prog(n)%flux_units), missing_value=missing_value, range=(/-1.e18,1.e18/))
