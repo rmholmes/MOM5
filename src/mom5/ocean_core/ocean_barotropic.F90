@@ -480,7 +480,7 @@ use ocean_types_mod,        only: ocean_velocity_type, ocean_density_type
 use ocean_types_mod,        only: ocean_adv_vel_type, ocean_prog_tracer_type
 use ocean_types_mod,        only: ocean_lagrangian_type
 use ocean_util_mod,         only: write_timestamp, diagnose_2d, diagnose_2d_u, diagnose_2d_en, write_chksum_2d
-use ocean_workspace_mod,    only: wrk1_2d, wrk2_2d, wrk3_2d, wrk4_2d, wrk1_v2d, wrk2_v2d
+use ocean_workspace_mod,    only: wrk1_2d, wrk2_2d, wrk3_2d, wrk4_2d, wrk1_v2d, wrk2_v2d, wrk1
 
 implicit none
 
@@ -542,7 +542,6 @@ real     :: eta_max = 5.0             ! max amplitude surface height fluctuation
 logical  :: debug_this_module=.false. ! for debugging--prints out a lot of checksums 
 logical  :: verbose_init=.true.       ! for printouts during initialization  
 integer  :: diag_step=-1              ! for printing ascii diagnostics 
-
 
 ! for vertical coordinate
 integer  :: vert_coordinate
@@ -771,6 +770,8 @@ integer :: id_deta_dt            =-1
 integer :: id_eta_u              =-1
 integer :: id_eta_t_bar          =-1
 integer :: id_eta_t_tendency     =-1
+integer :: id_eta_t_tendency_times_temp_in_mld =-1
+integer :: id_eta_t_tendency_times_salt_in_mld =-1
 integer :: id_smooth_lap         =-1
 integer :: id_smooth_lap_diag    =-1
 integer :: id_smooth_bih         =-1
@@ -2076,6 +2077,16 @@ subroutine barotropic_diag_init(Time)
                  Time%model_time, 'tendency for eta_t over a time step', 'm/s',                  &
                  missing_value=missing_value, range=(/-1e4,1e4/))
 
+  id_eta_t_tendency_times_temp_in_mld = register_diag_field ('ocean_model', 'eta_t_tendency_times_temp_in_mld', &
+                 Grd%tracer_axes(1:2),&
+                 Time%model_time, 'tendency for eta_t over a time step times temp in mld', 'deg_C/s',           &
+                 missing_value=missing_value, range=(/-1e6,1e6/))
+
+  id_eta_t_tendency_times_salt_in_mld = register_diag_field ('ocean_model', 'eta_t_tendency_times_salt_in_mld', &
+                 Grd%tracer_axes(1:2),&
+                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu/s',           &
+                 missing_value=missing_value, range=(/-1e6,1e6/))
+
   id_udrho_bt_lap = register_diag_field ('ocean_model', 'udrho_bt_lap',                 &
                     Grd%vel_axes_u(1:2), Time%model_time,                               &
                     'laplacian friction  to i-component udrho on barotropic time step', &
@@ -2406,12 +2417,13 @@ end subroutine eta_and_pbot_update
 !
 ! </DESCRIPTION>
 !
-subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, patm, pme, river, Ext_mode, &
+subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, river, Ext_mode, &
                                   L_system, use_blobs)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_density_type),       intent(in)    :: Dens
   type(ocean_thickness_type),     intent(inout) :: Thickness
+  type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   type(ocean_external_mode_type), intent(inout) :: Ext_mode
   type(ocean_lagrangian_type),    intent(in)    :: L_system
   real, dimension(isd:,jsd:),     intent(in)    :: patm
@@ -2419,12 +2431,25 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, patm, pme, river, Ext_m
   real, dimension(isd:,jsd:),     intent(in)    :: river 
   logical,                        intent(in)    :: use_blobs
 
-  integer  :: tau, taup1
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
+  real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tracer
+
+  integer  :: num_prog_tracers, index_temp, index_salt
+
+  integer  :: tau, taup1,
   integer  :: i,j,k,km1
   real     :: eta_global
 
   tau   = Time%tau
   taup1 = Time%taup1
+
+  num_prog_tracers = size(T_prog)
+  do n=1,num_prog_tracers
+     if (T_prog(n)%name == 'temp')        index_temp        = n
+     if (T_prog(n)%name == 'salt')        index_salt        = n
+  enddo
 
   ! diagnose bottom pressure 
   if(vert_coordinate_class==DEPTH_BASED) then       
@@ -2638,14 +2663,58 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, patm, pme, river, Ext_m
   call diagnose_2d(Time, Grd, id_patm_for_sea_lev, Ext_mode%patm_for_sea_lev(:,:))
   call diagnose_2d(Time, Grd, id_sea_lev_for_coupler, Thickness%sea_lev(:,:))
 
-  if(id_eta_t_tendency > 0) then 
-       wrk1_2d(:,:)= 0.0       
-       do j=jsc,jec
-          do i=isc,iec
-             wrk1_2d(i,j) = (Ext_mode%eta_t(i,j,taup1)-Ext_mode%eta_t(i,j,tau))*dtimer
-          enddo
-       enddo
-       call diagnose_2d(Time, Grd, id_eta_t_tendency, wrk1_2d(:,:))
+  if(id_eta_t_tendency > 0 .or. id_eta_t_tendency_times_temp_in_mld > 0 .or. id_eta_t_tendency_times_salt_in_mld > 0) then 
+       if (id_eta_t_tendency > 0) then
+           wrk1_2d(:,:)= 0.0
+           do j=jsc,jec
+              do i=isc,iec
+                 wrk1_2d(i,j) = (Ext_mode%eta_t(i,j,taup1)-Ext_mode%eta_t(i,j,tau))*dtimer
+              enddo
+           enddo
+           call diagnose_2d(Time, Grd, id_eta_t_tendency, wrk1_2d(:,:))
+       endif
+
+       if (id_eta_t_tendency_times_temp_in_mld > 0) then
+            wrk1(:,:,:) = 0.0
+            do k=1,nk
+               do j=jsc,jec
+                  do i=isc,iec
+                     wrk1(i,j,k) = T_prog(index_temp)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+                  enddo
+               enddo
+            enddo
+            tracer(:,:,:) = wrk1(:,:,:)
+            tracer_in_mld(:,:) = 0.0
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
+
+            tendency_in_mld(:,:) = 0.0
+            tendency_3d(:,:,:) = 0.0
+            tendency_3d(:,:,1) = wrk1_2d(:,:)
+            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
+       endif
+
+       if (id_eta_t_tendency_times_salt_in_mld > 0) then
+            wrk1(:,:,:) = 0.0
+            do k=1,nk
+               do j=jsc,jec
+                  do i=isc,iec
+                     wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+                  enddo
+               enddo
+            enddo
+            tracer(:,:,:) = wrk1(:,:,:)
+            tracer_in_mld(:,:) = 0.0
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
+
+            tendency_in_mld(:,:) = 0.0
+            tendency_3d(:,:,:) = 0.0
+            tendency_3d(:,:,1) = wrk1_2d(:,:)
+            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld), tendency_in_mld(:,:))
+       endif
   endif 
 
 

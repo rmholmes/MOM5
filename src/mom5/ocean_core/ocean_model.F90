@@ -1874,7 +1874,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
        ! diagnose time=taup1 ocean free surface height or bottom pressure.
        ! also diagnose geodepth_zt and geodepth_zwt.
        call mpp_clock_begin(id_eta_and_pbot_diagnose)
-       call eta_and_pbot_diagnose(Time, Dens, Thickness, patm, pme, river, Ext_mode, Lagrangian_system, use_blobs)
+       call eta_and_pbot_diagnose(Time, Dens, Thickness, T_prog, patm, pme, river, Ext_mode, Lagrangian_system, use_blobs)
        call mpp_clock_end(id_eta_and_pbot_diagnose)
 
        ! diagnose the geodepth of new blobs and the depth of old blobs
