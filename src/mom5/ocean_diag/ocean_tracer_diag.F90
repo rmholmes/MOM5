@@ -299,9 +299,8 @@ integer, dimension(:), allocatable :: id_subduction_mld_zflux_diff
 logical :: compute_subduction_diags = .false.
 
 
-! for tracer integrated and averaged over mixed layer
+! for tracer integrated over mixed layer
 integer, dimension(:), allocatable :: id_tracer_mld
-integer, dimension(:), allocatable :: id_tracer_avg_mld
 logical :: compute_tracer_mld_diags = .false.
 
 
@@ -536,14 +535,12 @@ ierr = check_nml_error(io_status,'ocean_tracer_diag_nml')
     allocate( id_subduction_vert_tracer(num_prog_tracers) )
     allocate( id_subduction_mld_zflux_diff(num_prog_tracers) )
     allocate( id_tracer_mld(num_prog_tracers) )
-    allocate( id_tracer_avg_mld(num_prog_tracers) )
     id_subduction_tracer(:)         = -1
     id_subduction_dhdt_tracer(:)    = -1
     id_subduction_horz_tracer(:)    = -1
     id_subduction_vert_tracer(:)    = -1
     id_subduction_mld_zflux_diff(:) = -1
     id_tracer_mld(:)                = -1 
-    id_tracer_avg_mld(:)                = -1 
     
     do n=1,num_prog_tracers
 
@@ -697,14 +694,7 @@ ierr = check_nml_error(io_status,'ocean_tracer_diag_nml')
         Grd%tracer_axes(1:2), Time%model_time,                                                         &
         'Vertically integrated tracer [sum(rho_dzt*tracer)] in mixed layer for '//trim(T_prog(n)%name),&
         'kg/m^2 * '//trim(T_prog(n)%units), missing_value=missing_value, range=(/-1.e20,1.e20/))
-       id_tracer_avg_mld(n) =                                                                              &
-        register_diag_field ('ocean_model',trim(T_prog(n)%name)//'_avg_mld',                               &
-        Grd%tracer_axes(1:2), Time%model_time,                                                         &
-        'Vertically averaged tracer [sum(rho_dzt*tracer)/mld] in mixed layer for '//trim(T_prog(n)%name),&
-        'kg/m^3 * '//trim(T_prog(n)%units), missing_value=missing_value, range=(/-1.e20,1.e20/))
-       if(id_tracer_mld(n) > 0 .or. id_tracer_avg_mld(n) > 0) compute_tracer_mld_diags = .true.
-
-
+       if(id_tracer_mld(n) > 0) compute_tracer_mld_diags = .true.
     enddo
 
     id_kappa_sort = register_diag_field ('ocean_model','kappa_sort', &
@@ -1081,7 +1071,7 @@ subroutine calc_mixed_layer_depth(Thickness, salinity, theta, rho, pressure, &
   real, dimension(isd:,jsd:),   intent(inout) :: hmxl
   logical, optional,            intent(in)    :: smooth_mld_input
 
-  real, parameter :: epsln=1.0e-20  ! for divisions 
+  real, parameter :: epsln=1.0e-20  ! for divisions
   integer         :: i, j, k, km1, kb
   logical         :: smooth_mld_routine 
 
@@ -1681,7 +1671,6 @@ subroutine compute_tracer_mld(Time, Thickness, Dens, T_prog, salinity, theta)
   integer :: i,j,k,kp1,n
   integer :: taup1
   real, dimension(isd:ied,jsd:jed) :: mld
-  real, parameter :: epsln=1.0e-20  ! for divisions
   
   if (.not.module_is_initialized) then 
     call mpp_error(FATAL, &
@@ -1745,7 +1734,7 @@ subroutine compute_tracer_mld(Time, Thickness, Dens, T_prog, salinity, theta)
  
   ! compute the vertically integrated tracer within the mixed layer   
   do n=1,num_prog_tracers
-     if(id_tracer_mld(n) > 0 .or. id_tracer_avg_mld(n) > 0) then
+     if(id_tracer_mld(n) > 0) then
          wrk1_2d(:,:) = 0.0
          do k=1,nk
             do j=jsc,jec
@@ -1755,15 +1744,8 @@ subroutine compute_tracer_mld(Time, Thickness, Dens, T_prog, salinity, theta)
                enddo
             enddo
          enddo
-         if (id_tracer_mld(n) > 0) then
-            used = send_data (id_tracer_mld(n), wrk1_2d(:,:), &
-            Time%model_time, rmask=Grd%tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
-         endif
-         if (id_tracer_avg_mld(n) > 0) then
-            used = send_data (id_tracer_avg_mld(n), wrk1_2d(:,:)/(mld(:,:) + epsln), &
-            Time%model_time, rmask=Grd%tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
-         endif
-         
+         used = send_data (id_tracer_mld(n), wrk1_2d(:,:), &
+         Time%model_time, rmask=Grd%tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
     endif 
   enddo
   
