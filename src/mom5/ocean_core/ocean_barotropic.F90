@@ -2435,6 +2435,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
   real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
   real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
   real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
+  real, dimension(isd:ied,jsd:jed) :: eta_t_tendency
   real, dimension(isd:ied,jsd:jed,1:nk) :: tracer
 
   integer  :: num_prog_tracers, index_temp, index_salt, n
@@ -2671,6 +2672,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
              wrk1_2d(i,j) = (Ext_mode%eta_t(i,j,taup1)-Ext_mode%eta_t(i,j,tau))*dtimer
           enddo
        enddo
+       eta_t_tendency(:,:) = wrk1_2d(:,:)
 
        if (id_eta_t_tendency > 0) then
            call diagnose_2d(Time, Grd, id_eta_t_tendency, wrk1_2d(:,:))
@@ -2692,7 +2694,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
  
             tendency_in_mld(:,:) = 0.0
             tendency_3d(:,:,:) = 0.0
-            tendency_3d(:,:,1) = wrk1_2d(:,:)
+            tendency_3d(:,:,1) = eta_t_tendency(:,:)
             call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
        endif
