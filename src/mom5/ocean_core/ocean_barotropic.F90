@@ -2688,35 +2688,35 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
             tracer(:,:,:) = wrk1(:,:,:)
             tracer_in_mld(:,:) = 0.0
             call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
-
+            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tracer_in_mld(:,:))
+ 
             tendency_in_mld(:,:) = 0.0
             tendency_3d(:,:,:) = 0.0
             tendency_3d(:,:,1) = wrk1_2d(:,:)
-            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
             call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
        endif
 
-       if (id_eta_t_tendency_times_salt_in_mld > 0) then
-            wrk1(:,:,:) = 0.0
-            do k=1,nk
-               do j=jsc,jec
-                  do i=isc,iec
-                     wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
-                  enddo
-               enddo
-            enddo
-            tracer(:,:,:) = wrk1(:,:,:)
-            tracer_in_mld(:,:) = 0.0
-            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
-
-            tendency_in_mld(:,:) = 0.0
-            tendency_3d(:,:,:) = 0.0
-            tendency_3d(:,:,1) = wrk1_2d(:,:)
-            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
-            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
-            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
-       endif
+!       if (id_eta_t_tendency_times_salt_in_mld > 0) then
+!            wrk1(:,:,:) = 0.0
+!            do k=1,nk
+!               do j=jsc,jec
+!                  do i=isc,iec
+!                     wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+!                  enddo
+!               enddo
+!            enddo
+!            tracer(:,:,:) = wrk1(:,:,:)
+!            tracer_in_mld(:,:) = 0.0
+!            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
+!
+!            tendency_in_mld(:,:) = 0.0
+!            tendency_3d(:,:,:) = 0.0
+!            tendency_3d(:,:,1) = wrk1_2d(:,:)
+!            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
+!            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+!            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
+!       endif
   endif 
 
 
