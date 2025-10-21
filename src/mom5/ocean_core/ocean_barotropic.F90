@@ -2664,14 +2664,15 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
   call diagnose_2d(Time, Grd, id_patm_for_sea_lev, Ext_mode%patm_for_sea_lev(:,:))
   call diagnose_2d(Time, Grd, id_sea_lev_for_coupler, Thickness%sea_lev(:,:))
 
-  if(id_eta_t_tendency > 0 .or. id_eta_t_tendency_times_temp_in_mld > 0 .or. id_eta_t_tendency_times_salt_in_mld > 0) then 
+  if(id_eta_t_tendency > 0 .or. id_eta_t_tendency_times_temp_in_mld > 0 .or. id_eta_t_tendency_times_salt_in_mld > 0) then
+       wrk1_2d(:,:)= 0.0
+       do j=jsc,jec
+          do i=isc,iec
+             wrk1_2d(i,j) = (Ext_mode%eta_t(i,j,taup1)-Ext_mode%eta_t(i,j,tau))*dtimer
+          enddo
+       enddo
+
        if (id_eta_t_tendency > 0) then
-           wrk1_2d(:,:)= 0.0
-           do j=jsc,jec
-              do i=isc,iec
-                 wrk1_2d(i,j) = (Ext_mode%eta_t(i,j,taup1)-Ext_mode%eta_t(i,j,tau))*dtimer
-              enddo
-           enddo
            call diagnose_2d(Time, Grd, id_eta_t_tendency, wrk1_2d(:,:))
        endif
 
