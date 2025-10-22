@@ -850,6 +850,8 @@ integer :: id_grad_anompbx   =-1
 integer :: id_grad_anompby   =-1
 
 integer :: id_eta_smoother   =-1
+integer :: id_eta_smoother_times_temp_in_mld   =-1
+integer :: id_eta_smoother_times_salt_in_mld   =-1
 integer :: id_pbot_smoother  =-1
 integer :: id_smooth_mask    =-1
 
@@ -2017,6 +2019,16 @@ subroutine barotropic_diag_init(Time)
                   Time%model_time,'surface smoother applied to eta', 'm/s',                   &
                   missing_value=missing_value, range=(/-1e6,1e6/))  
 
+  id_eta_smoother_times_temp_in_mld = register_diag_field ('ocean_model', 'eta_smoother_times_temp_in_mld', &
+                 Grd%tracer_axes(1:2),&
+                 Time%model_time, 'tendency for eta_t over a time step times temp in mld', 'deg_C/s',           &
+                 missing_value=missing_value, range=(/-1e6,1e6/))
+
+  id_eta_smoother_times_salt_in_mld = register_diag_field ('ocean_model', 'eta_smoother_times_salt_in_mld', &
+                 Grd%tracer_axes(1:2),&
+                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu/s',           &
+                 missing_value=missing_value, range=(/-1e6,1e6/))
+
   id_pbot_smoother  = register_diag_field ('ocean_model', 'pbot_smooth',  Grd%tracer_axes(1:2), &
                     Time%model_time,'bottom smoother applied to bottom pressure', 'dbar/s',     &
                     missing_value=missing_value, range=(/-1e6,1e6/))  
@@ -2436,7 +2448,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
   real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
   real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
   real, dimension(isd:ied,jsd:jed) :: eta_t_tendency
-  real, dimension(isd:ied,jsd:jed,1:nk) :: tracer
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tracer_ext
 
   integer  :: num_prog_tracers, index_temp, index_salt, n
 
@@ -2687,38 +2699,36 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
                   enddo
                enddo
             enddo
-            tracer(:,:,:) = wrk1(:,:,:)
+            tracer_ext(:,:,:) = wrk1(:,:,:)
             tracer_in_mld(:,:) = 0.0
-            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
-            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tracer_in_mld(:,:))
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer_ext(:,:,:), tracer_in_mld(:,:))
  
             tendency_in_mld(:,:) = 0.0
             tendency_3d(:,:,:) = 0.0
-            tendency_3d(:,:,1) = eta_t_tendency(:,:)
+            tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)
             call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
             call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
        endif
 
-!       if (id_eta_t_tendency_times_salt_in_mld > 0) then
-!            wrk1(:,:,:) = 0.0
-!            do k=1,nk
-!               do j=jsc,jec
-!                  do i=isc,iec
-!                     wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
-!                  enddo
-!               enddo
-!            enddo
-!            tracer(:,:,:) = wrk1(:,:,:)
-!            tracer_in_mld(:,:) = 0.0
-!            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer(:,:,:), tracer_in_mld(:,:))
-!
-!            tendency_in_mld(:,:) = 0.0
-!            tendency_3d(:,:,:) = 0.0
-!            tendency_3d(:,:,1) = wrk1_2d(:,:)
-!            tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
-!            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
-!            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
-!       endif
+       if (id_eta_t_tendency_times_salt_in_mld > 0) then
+            wrk1(:,:,:) = 0.0
+            do k=1,nk
+               do j=jsc,jec
+                  do i=isc,iec
+                     wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+                  enddo
+               enddo
+            enddo
+            tracer_ext(:,:,:) = wrk1(:,:,:)
+            tracer_in_mld(:,:) = 0.0
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer_ext(:,:,:), tracer_in_mld(:,:))
+
+            tendency_in_mld(:,:) = 0.0
+            tendency_3d(:,:,:) = 0.0
+            tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)
+            call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+            call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
+       endif
   endif 
 
 
@@ -4835,18 +4845,29 @@ end subroutine eta_smooth_diagnosed
 !
 ! </DESCRIPTION>
 !
-subroutine ocean_eta_smooth(Time, Thickness, Ext_mode, T_prog)
+subroutine ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog)
 
   type(ocean_time_type),          intent(in)    :: Time
   type(ocean_thickness_type),     intent(inout) :: Thickness
+  type(ocean_density_type),       intent(in)    :: Dens
   type(ocean_external_mode_type), intent(inout) :: Ext_mode
   type(ocean_prog_tracer_type),   intent(inout) :: T_prog(:)
   real, dimension(isd:ied,jsd:jed) :: tmp
 
+  real, dimension(isd:ied,jsd:jed) :: tendency_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tendency_3d
+  real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
+  real, dimension(isd:ied,jsd:jed,1:nk) :: tracer_ext
+
   integer :: i, j, n, nprog, taum1
+  integer :: index_temp, index_salt, n
   real    :: eta_min
 
   nprog = size(T_prog(:))  
+  do n=1,nprog
+     if (T_prog(n)%name == 'temp')        index_temp        = n
+     if (T_prog(n)%name == 'salt')        index_salt        = n
+  enddo
 
   ! initialise some fields for later use with OBC and return 
   if(.not. smooth_eta_t_laplacian .and. .not. smooth_eta_t_biharmonic) then
@@ -4920,6 +4941,46 @@ subroutine ocean_eta_smooth(Time, Thickness, Ext_mode, T_prog)
   enddo
   
   if (id_eta_smoother > 0) call diagnose_2d(Time, Grd, id_eta_smoother, tmp(:,:)*rho0r)
+
+  if (id_eta_smoother_times_temp_in_mld > 0) then
+      wrk1(:,:,:) = 0.0
+      do k=1,nk
+         do j=jsc,jec
+            do i=isc,iec
+               wrk1(i,j,k) = T_prog(index_temp)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+            enddo
+         enddo
+      enddo
+      tracer_ext(:,:,:) = wrk1(:,:,:)
+      tracer_in_mld(:,:) = 0.0
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer_ext(:,:,:), tracer_in_mld(:,:))
+
+      tendency_in_mld(:,:) = 0.0
+      tendency_3d(:,:,:) = 0.0
+      tendency_3d(:,:,1) = Ext_mode$eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
+  endif
+
+if (id_eta_smoother_times_salt_in_mld > 0) then
+      wrk1(:,:,:) = 0.0
+      do k=1,nk
+         do j=jsc,jec
+            do i=isc,iec
+               wrk1(i,j,k) = T_prog(index_salt)%field(i,j,k,tau)*Thickness%rho_dzt(i,j,k,tau)
+            enddo
+         enddo
+      enddo
+      tracer_ext(:,:,:) = wrk1(:,:,:)
+      tracer_in_mld(:,:) = 0.0
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tracer_ext(:,:,:), tracer_in_mld(:,:))
+
+      tendency_in_mld(:,:) = 0.0
+      tendency_3d(:,:,:) = 0.0
+      tendency_3d(:,:,1) = Ext_mode$eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
+      call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+      call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
+  endif
 
   ! T_prog%eta_smooth has dimensions tracer concentration * (kg/m^3)*(m/s).
   ! note that tracer filter is zero when eta_t is zero, as we wish since in 

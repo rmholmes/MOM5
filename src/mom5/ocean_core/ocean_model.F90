@@ -1713,7 +1713,7 @@ subroutine ocean_model_init(Ocean, Ocean_state, Time_init, Time_in, &
        ! smoother is not needed for C-grid.  
        if(vert_coordinate_class==DEPTH_BASED) then 
           call mpp_clock_begin(id_surface_smooth)
-          call ocean_eta_smooth(Time, Thickness, Ext_mode, T_prog(1:num_prog_tracers))
+          call ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog(1:num_prog_tracers))
           call mpp_clock_end(id_surface_smooth)
        endif
 
