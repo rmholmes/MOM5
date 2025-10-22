@@ -4859,8 +4859,8 @@ subroutine ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog)
   real, dimension(isd:ied,jsd:jed) :: tracer_in_mld
   real, dimension(isd:ied,jsd:jed,1:nk) :: tracer_ext
 
-  integer :: i, j, n, nprog, taum1
-  integer :: index_temp, index_salt, n
+  integer :: i, j, n, k, nprog, taum1, tau
+  integer :: index_temp, index_salt
   real    :: eta_min
 
   nprog = size(T_prog(:))  
@@ -4881,6 +4881,7 @@ subroutine ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog)
   endif
 
   taum1            = Time%taum1
+  tau              = Time%tau
   smooth_mask(:,:) = 0.0
   etastar(:,:)     = 0.0
   tmp(:,:)         = 0.0
@@ -4957,7 +4958,7 @@ subroutine ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog)
 
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
-      tendency_3d(:,:,1) = Ext_mode$eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
+      tendency_3d(:,:,1) = Ext_mode%eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
       call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
       call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
   endif
@@ -4977,7 +4978,7 @@ if (id_eta_smoother_times_salt_in_mld > 0) then
 
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
-      tendency_3d(:,:,1) = Ext_mode$eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
+      tendency_3d(:,:,1) = Ext_mode%eta_smooth(:,:)*tracer_in_mld(:,:)*rho0r
       call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
       call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
   endif
