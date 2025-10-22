@@ -2577,7 +2577,7 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
               Grd%tracer_axes(1:2),                         &
               Time%model_time,                              &
               'mass flx of precip-evap+river via sbc (liquid, frozen, evaporation) averaged in mixed layer times mixed layer salinity',&
-              '(kg/m^3)*(m/sec) '//trim(T_prog(n)%units)//' kg m-3 / m',&
+              '(kg/m^3)*(m/sec) '//trim(T_prog(n)%units)//' / m',&
               missing_value=missing_value,range=(/-1e6,1e6/))
          name = 'sfc_'//trim(T_prog(n)%name)//'_flux_prec'
          id_stf_prec(n) = register_diag_field('ocean_model',&
