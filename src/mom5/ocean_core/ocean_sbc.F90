@@ -2442,7 +2442,7 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
          id_pme_river_times_tracer_in_mld(n) = register_diag_field('ocean_model','pme_river_times_temp_in_mld',                    &
               Grd%tracer_axes(1:2),                                                                          &
               Time%model_time, 'mass flux of precip-evap+river via sbc (liquid, frozen, evaporation) averaged in mixed layer times mixed layer temperature',&
-              '(kg/m^3)*(m/sec) '//trim(T_prog(n)%units)//' kg m-3 / m', missing_value=missing_value,range=(/-1e6,1e6/))
+              '(kg/m^3)*(m/sec) '//trim(T_prog(n)%units)//' / m', missing_value=missing_value,range=(/-1e6,1e6/))
          id_stf_prec(n) = register_diag_field('ocean_model','sfc_hflux_from_water_prec',      &
               Grd%tracer_axes(1:2),                                                           &
               Time%model_time, 'heat flux from precip transfer of water across ocean surface',&
