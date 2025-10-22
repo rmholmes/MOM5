@@ -4958,7 +4958,7 @@ subroutine ocean_eta_smooth(Time, Thickness, Dens, Ext_mode, T_prog)
       
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
-      tendency_3d(:,:,1) = Ext_mode$eta_smooth(:,:)*rho0r*tracer_in_mld(:,:)
+      tendency_3d(:,:,1) = Ext_mode%eta_smooth(:,:)*rho0r*tracer_in_mld(:,:)
       call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
       call diagnose_2d(Time, Grd, id_eta_smoother_times_temp_in_mld, tendency_in_mld(:,:))
   endif
