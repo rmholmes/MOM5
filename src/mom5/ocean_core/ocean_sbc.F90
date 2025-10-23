@@ -4875,7 +4875,7 @@ subroutine flux_adjust(Time, T_diag, Dens, Thickness, Ext_mode, T_prog, Velocity
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
       tendency_3d(:,:,1) = pme(:,:) + river(:,:)
-      tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
+      tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)*rho0r
       call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
       call diagnose_2d(Time, Grd, id_pme_river_times_tracer_in_mld(index_temp), tendency_in_mld(:,:))
   endif
@@ -4895,7 +4895,7 @@ subroutine flux_adjust(Time, T_diag, Dens, Thickness, Ext_mode, T_prog, Velocity
       tendency_in_mld(:,:) = 0.0
       tendency_3d(:,:,:) = 0.0
       tendency_3d(:,:,1) = pme(:,:) + river(:,:)
-      tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)
+      tendency_3d(:,:,1) = tendency_3d(:,:,1)*tracer_in_mld(:,:)*rho0r
       call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
       call diagnose_2d(Time, Grd, id_pme_river_times_tracer_in_mld(index_salt), tendency_in_mld(:,:))
   endif
