@@ -2571,7 +2571,7 @@ subroutine ocean_sbc_diag_init(Time, Dens, T_prog)
               Time%model_time, trim(name),                 &
               'kg/(m^3*sec)' ,                             &
               missing_value=missing_value,range=(/-1.e4,1.e4/))            
-         name = 'pme_river_times_'//trim(T_prog(n)%name)//'_tracer_in_mld'
+         name = 'pme_river_times_'//trim(T_prog(n)%name)//'_in_mld'
          id_pme_river_times_tracer_in_mld(n) = register_diag_field('ocean_model',&
               trim(name),                                   &
               Grd%tracer_axes(1:2),                         &

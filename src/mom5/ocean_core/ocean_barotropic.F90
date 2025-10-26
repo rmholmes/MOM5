@@ -2026,7 +2026,7 @@ subroutine barotropic_diag_init(Time)
 
   id_eta_smoother_times_salt_in_mld = register_diag_field ('ocean_model', 'eta_smoother_times_salt_in_mld', &
                  Grd%tracer_axes(1:2),&
-                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu/s',           &
+                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu kg m-3 s-1',           &
                  missing_value=missing_value, range=(/-1e6,1e6/))
 
   id_pbot_smoother  = register_diag_field ('ocean_model', 'pbot_smooth',  Grd%tracer_axes(1:2), &
@@ -2097,7 +2097,7 @@ subroutine barotropic_diag_init(Time)
 
   id_eta_t_tendency_times_salt_in_mld = register_diag_field ('ocean_model', 'eta_t_tendency_times_salt_in_mld', &
                  Grd%tracer_axes(1:2),&
-                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu/s',           &
+                 Time%model_time, 'tendency for eta_t over a time step times salt in mld', 'psu kg m-3 s-1',    &
                  missing_value=missing_value, range=(/-1e6,1e6/))
 
   id_udrho_bt_lap = register_diag_field ('ocean_model', 'udrho_bt_lap',                 &
@@ -2169,7 +2169,7 @@ subroutine barotropic_diag_init(Time)
 
      rho_water_r=rho0r
      id_pme_velocity = register_diag_field('ocean_model','pme_velocity', Grd%tracer_axes(1:2),       &
-          Time%model_time, 'net (precip-evap)(kg/(m2*sec) into ocean, divided by 1035kg/m3', 'm/sec',&
+          Time%model_time, 'net (precip-evap)(kg/(m2*sec)) into ocean, divided by 1035kg/m3', 'm/sec',&
           missing_value=missing_value,range=(/-1e6,1e6/))
 
      id_conv_ud_pred_bt1 = register_diag_field ('ocean_model', 'conv_ud_pred_bt1', Grd%tracer_axes(1:2),                &
