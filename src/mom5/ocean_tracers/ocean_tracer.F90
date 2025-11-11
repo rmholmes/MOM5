@@ -4042,9 +4042,10 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
       endif
 
       if (id_tracer_at_mlb(n) > 0) then
-         tracer_at_mlb(:,:) = 0.0
-         call compute_tracer_in_mlb(Time, Thickness, Dens, T_prog, T_prog(n)%field(:,:,:,tau), tracer_at_mlb(:,:))
-         call diagnose_2d(Time, Grd, id_tracer_at_mlb(n), tracer_at_mlb(:,:))
+         tendency_in_mld(:,:) = 0.0
+         tendency_3d(:,:,:) = T_prog(n)%field(:,:,:,tau)
+         call compute_tracer_in_mlb(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+         call diagnose_2d(Time, Grd, id_tracer_at_mlb(n), tendency_in_mld(:,:))
       endif
 
      ! time tendency for tracer concentration 
