@@ -1883,8 +1883,9 @@ subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tracer, tracer_a
   real, dimension(isd:,jsd:,:), intent(in)    :: tracer          ! 3D tracer
   real, dimension(isd:,jsd:),   intent(inout)   :: tracer_at_mlb ! tracer at mixed layer base
 
-  integer :: i,j,k,kp1,n
+  integer :: i,j,k,kmt
   integer :: tau
+  real    :: W1, W2, denominator_r
   real, dimension(isd:ied,jsd:jed) :: mld
   real, parameter :: epsln=1.0e-20  ! for divisions 
 
