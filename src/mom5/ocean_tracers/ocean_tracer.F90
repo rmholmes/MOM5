@@ -205,7 +205,7 @@ use ocean_tempsalt_mod,         only: contemp_from_pottemp, pottemp_from_contemp
 use ocean_tpm_mod,              only: ocean_tpm_init
 use ocean_tpm_util_mod,         only: otpm_set_tracer_package
 use ocean_tracer_advect_mod,    only: horz_advect_tracer, vert_advect_tracer
-use ocean_tracer_diag_mod,      only: send_tracer_variance, compute_budget_mld
+use ocean_tracer_diag_mod,      only: send_tracer_variance, compute_budget_mld, compute_tracer_at_mlb
 use ocean_tracer_util_mod,      only: rebin_onto_rho, diagnose_mass_of_layer 
 use ocean_tracer_util_mod,      only: tracer_prog_chksum, tracer_diag_chksum, tracer_min_max
 use ocean_thickness_mod,        only: update_E_thickness
@@ -4044,7 +4044,7 @@ subroutine send_tracer_diagnostics(Time, T_prog, T_diag, Thickness, Dens, use_bl
       if (id_tracer_at_mlb(n) > 0) then
          tendency_in_mld(:,:) = 0.0
          tendency_3d(:,:,:) = T_prog(n)%field(:,:,:,tau)
-         call compute_tracer_in_mlb(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
+         call compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
          call diagnose_2d(Time, Grd, id_tracer_at_mlb(n), tendency_in_mld(:,:))
       endif
 
