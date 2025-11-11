@@ -330,6 +330,7 @@ integer, allocatable, dimension(:) :: id_tendency_concT
 integer, allocatable, dimension(:) :: id_tendency
 integer, allocatable, dimension(:) :: id_tendency_in_mld
 integer, allocatable, dimension(:) :: id_tracer_in_mld
+integer, allocatable, dimension(:) :: id_tracer_at_mlb
 integer, allocatable, dimension(:) :: id_tendency_on_nrho
 integer, allocatable, dimension(:) :: id_tendencyL
 integer, allocatable, dimension(:) :: id_tendencyT
