@@ -352,6 +352,7 @@ public calc_potrho_mixed_layer
 public send_tracer_variance
 public diagnose_eta_tend_3dflux
 public compute_budget_mld
+public compute_tracer_at_mlb
 
 private compute_subduction 
 private compute_tracer_mld
@@ -1782,7 +1783,7 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
 
   if (.not.module_is_initialized) then
     call mpp_error(FATAL, &
-    '==>Error from ocean_tracer_diag_mod (compute_tracer_mld): module needs initialization')
+    '==>Error from ocean_tracer_diag_mod (compute_budget_mld): module needs initialization')
   endif
 
   tau = Time%tau
@@ -1861,6 +1862,90 @@ subroutine compute_budget_mld(Time, Thickness, Dens, T_prog, tendency, tendency_
 end subroutine compute_budget_mld
 ! </SUBROUTINE>  NAME="compute_budget_mld"
 
+!#######################################################################
+! <SUBROUTINE NAME="compute_tracer_at_mlb">
+!
+! <DESCRIPTION>
+!
+! Compute the tracer value at the base of the mixed layer using simple interpolation.
+!
+!
+! Ryan.Holmes
+! November 2025
+! </DESCRIPTION>
+!
+subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tracer, tracer_at_mlb)
+
+  type(ocean_time_type),        intent(in)    :: Time
+  type(ocean_thickness_type),   intent(in)    :: Thickness
+  type(ocean_density_type),     intent(in)    :: Dens
+  type(ocean_prog_tracer_type), intent(in)    :: T_prog(:)
+  real, dimension(isd:,jsd:,:), intent(in)    :: tracer          ! 3D tracer
+  real, dimension(isd:,jsd:),   intent(inout)   :: tracer_at_mlb ! tracer at mixed layer base
+
+  integer :: i,j,k,kp1,n
+  integer :: tau
+  real, dimension(isd:ied,jsd:jed) :: mld
+  real, parameter :: epsln=1.0e-20  ! for divisions 
+
+
+  if (.not.module_is_initialized) then
+    call mpp_error(FATAL, &
+    '==>Error from ocean_tracer_diag_mod (compute_tracer_at_mlb): module needs initialization')
+  endif
+
+  tau = Time%tau
+
+  ! compute mld using tau values:
+   call calc_mixed_layer_depth(Thickness,                   &
+           T_prog(index_salt)%field(isd:ied,jsd:jed,:,tau), &
+           T_prog(index_temp)%field(isd:ied,jsd:jed,:,tau), &
+           Dens%rho(isd:ied,jsd:jed,:,tau),                 &
+           Dens%pressure_at_depth(isd:ied,jsd:jed,:),       &
+           mld(:,:), smooth_mld_input=.false.)
+  
+  tracer_at_mlb(:,:)        = 0.0
+
+  ! shallow values
+  do j=jsc,jec
+     do i=isc,iec
+        if(mld(i,j) <= Thickness%depth_zt(i,j,1)) then
+           tracer_at_mlb(i,j)  = tracer(i,j,1)
+        endif
+     enddo
+  enddo
+
+  ! intermediate mld
+  do j=jsc,jec
+     do i=isc,iec
+kloop:  do k=1,nk-1
+           if(Thickness%depth_zt(i,j,k) < mld(i,j) .and. mld(i,j) <= Thickness%depth_zt(i,j,k+1)) then 
+              if(Grd%tmask(i,j,k+1) > 0) then
+                 W1= mld(i,j) - Thickness%depth_zt(i,j,k)
+                 W2= Thickness%depth_zt(i,j,k+1) - mld(i,j)
+                 denominator_r = 1.0/(W1 + W2 + epsln)
+                 tracer_at_mlb(i,j)        = (tracer(i,j,k)*W2 + tracer(i,j,k+1)*W1)*denominator_r 
+                 exit kloop
+              endif
+           endif
+        enddo kloop
+     enddo
+  enddo
+
+  ! deep mld
+  do j=jsc,jec
+     do i=isc,iec
+        kmt = Grd%kmt(i,j)
+        if(kmt > 0) then 
+           if(mld(i,j) > Thickness%depth_zt(i,j,kmt)) then
+              tracer_at_mlb(i,j)        = tracer(i,j,kmt)
+           endif
+        endif 
+     enddo
+  enddo
+
+end subroutine compute_tracer_at_mlb
+! </SUBROUTINE>  NAME="compute_tracer_at_mlb"
 
 !#######################################################################
 ! <SUBROUTINE NAME="tracer_change">
