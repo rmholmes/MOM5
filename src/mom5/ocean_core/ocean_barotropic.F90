@@ -481,7 +481,7 @@ use ocean_types_mod,        only: ocean_adv_vel_type, ocean_prog_tracer_type
 use ocean_types_mod,        only: ocean_lagrangian_type
 use ocean_util_mod,         only: write_timestamp, diagnose_2d, diagnose_2d_u, diagnose_2d_en, write_chksum_2d
 use ocean_workspace_mod,    only: wrk1_2d, wrk2_2d, wrk3_2d, wrk4_2d, wrk1_v2d, wrk2_v2d, wrk1
-use ocean_tracer_diag_mod,    only: compute_budget_mld
+use ocean_tracer_diag_mod,    only: compute_budget_mld, compute_tracer_at_mlb
 
 implicit none
 
@@ -2122,7 +2122,7 @@ subroutine barotropic_diag_init(Time)
   id_s_surf_ent_salt = register_diag_field ('ocean_model', 's_surf_ent_salt', &
                  Grd%tracer_axes(1:2),&
                  Time%model_time, 'salinification due to entrainment across s-surface at base of mixed layer', &
-                 'psu kg m-3 s-1', missing_value=missing_value, range=(/-1e6,1e6/)
+                 'psu kg m-3 s-1', missing_value=missing_value, range=(/-1e6,1e6/))
 
   id_udrho_bt_lap = register_diag_field ('ocean_model', 'udrho_bt_lap',                 &
                     Grd%vel_axes_u(1:2), Time%model_time,                               &
@@ -2717,7 +2717,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
            call diagnose_2d(Time, Grd, id_eta_t_tendency, wrk1_2d(:,:))
        endif
 
-       if (id_eta_t_tendency_times_temp_in_mld > 0) then
+       if ( id_eta_t_tendency_times_temp_in_mld > 0) then
             wrk1(:,:,:) = 0.0
             do k=1,nk
                do j=jsc,jec
@@ -2737,7 +2737,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
             call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_in_mld, tendency_in_mld(:,:))
        endif
 
-       if (id_eta_t_tendency_times_temp_at_mlb > 0 .or. id_s_surf_ent_temp > 0 ) then
+       if ( id_eta_t_tendency_times_temp_at_mlb > 0 .or. id_s_surf_ent_temp > 0 ) then
             tracer_ext(:,:,:) = T_prog(index_temp)%field(:,:,:,tau)
             tracer_in_mld(:,:) = 0.0
             mld(:,:) = 0.0
@@ -2745,14 +2745,14 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
 
             tendency_3d(:,:,:) = 0.0
 
-            if id_eta_t_tendency_times_temp_at_mlb > 0) then
+            if ( id_eta_t_tendency_times_temp_at_mlb > 0 ) then
                 tendency_in_mld(:,:) = 0.0
                 tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
                 call diagnose_2d(Time, Grd, id_eta_t_tendency_times_temp_at_mlb, tendency_in_mld(:,:))
             endif
 
-            if id_s_surf_ent_temp > 0) then
+            if ( id_s_surf_ent_temp > 0 ) then
                 tendency_in_mld(:,:) = 0.0
                 tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau))))
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
@@ -2761,7 +2761,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
 
        endif
 
-       if (id_eta_t_tendency_times_salt_in_mld > 0) then
+       if ( id_eta_t_tendency_times_salt_in_mld > 0) then
             wrk1(:,:,:) = 0.0
             do k=1,nk
                do j=jsc,jec
@@ -2781,7 +2781,7 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
             call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_in_mld, tendency_in_mld(:,:))
        endif
 
-       if (id_eta_t_tendency_times_salt_at_mlb > 0 .or. id_s_surf_ent_salt > 0 ) then
+       if ( id_eta_t_tendency_times_salt_at_mlb > 0 .or. id_s_surf_ent_salt > 0 ) then
             tracer_ext(:,:,:) = T_prog(index_salt)%field(:,:,:,tau)
             tracer_in_mld(:,:) = 0.0
             mld(:,:) = 0.0
@@ -2789,14 +2789,14 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
 
             tendency_3d(:,:,:) = 0.0
 
-            if id_eta_t_tendency_times_salt_at_mlb > 0) then
+            if ( id_eta_t_tendency_times_salt_at_mlb > 0 ) then
                 tendency_in_mld(:,:) = 0.0
                 tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
                 call diagnose_2d(Time, Grd, id_eta_t_tendency_times_salt_at_mlb, tendency_in_mld(:,:))
             endif
 
-            if id_s_surf_ent_salt > 0) then
+            if ( id_s_surf_ent_salt > 0 ) then
                 tendency_in_mld(:,:) = 0.0
                 tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau))))
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
