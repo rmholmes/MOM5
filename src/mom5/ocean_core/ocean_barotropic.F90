@@ -2754,7 +2754,9 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
 
             if ( id_s_surf_ent_temp > 0 ) then
                 tendency_in_mld(:,:) = 0.0
-                tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau))))
+                tendency_3d(:,:,1) = Grd%tmask(:,:,1)*eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - &
+                                     (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau) + epsln)) & 
+                                     )
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
                 call diagnose_2d(Time, Grd, id_s_surf_ent_temp, tendency_in_mld(:,:))
             endif
@@ -2798,7 +2800,9 @@ subroutine eta_and_pbot_diagnose (Time, Dens, Thickness, T_prog, patm, pme, rive
 
             if ( id_s_surf_ent_salt > 0 ) then
                 tendency_in_mld(:,:) = 0.0
-                tendency_3d(:,:,1) = eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau))))
+                tendency_3d(:,:,1) = Grd%tmask(:,:,1)*eta_t_tendency(:,:)*tracer_in_mld(:,:)*(1.0 - &
+                                     (mld(:,:)/(Grd%ht(:,:) + Ext_mode%eta_t(:,:,tau) + epsln)) &
+                                     )
                 call compute_budget_mld(Time, Thickness, Dens, T_prog, tendency_3d(:,:,:), tendency_in_mld(:,:))
                 call diagnose_2d(Time, Grd, id_s_surf_ent_salt, tendency_in_mld(:,:))
             endif
