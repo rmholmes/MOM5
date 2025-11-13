@@ -1874,7 +1874,7 @@ end subroutine compute_budget_mld
 ! November 2025
 ! </DESCRIPTION>
 !
-subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tracer, tracer_at_mlb)
+subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog,tracer, tracer_at_mlb, mld_out)
 
   type(ocean_time_type),        intent(in)    :: Time
   type(ocean_thickness_type),   intent(in)    :: Thickness
@@ -1882,6 +1882,7 @@ subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tracer, tracer_a
   type(ocean_prog_tracer_type), intent(in)    :: T_prog(:)
   real, dimension(isd:,jsd:,:), intent(in)    :: tracer          ! 3D tracer
   real, dimension(isd:,jsd:),   intent(inout)   :: tracer_at_mlb ! tracer at mixed layer base
+  real, dimension(isd:,jsd:),   intent(inout)   :: mld_out       ! mixed layer depth (for output)
 
   integer :: i,j,k,kmt
   integer :: tau
@@ -1906,6 +1907,7 @@ subroutine compute_tracer_at_mlb(Time, Thickness, Dens, T_prog, tracer, tracer_a
            mld(:,:), smooth_mld_input=.false.)
   
   tracer_at_mlb(:,:)        = 0.0
+  mld_out(:,:) = mld(:,:)
 
   ! shallow values
   do j=jsc,jec
